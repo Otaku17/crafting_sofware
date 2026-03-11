@@ -19,6 +19,7 @@ async function traverseDir(
 
 export interface ProjectFiles {
   projectName: string;
+  projectIconUrl: string | null;
   config: CraftingConfig;
   configHandle: FileSystemFileHandle;
   items: GameItem[];
@@ -31,6 +32,7 @@ export interface ProjectFiles {
 export async function loadProjectFiles(rootDir: FileSystemDirectoryHandle): Promise<ProjectFiles> {
   const warnings: string[] = [];
   let projectName = rootDir.name;
+  let projectIconUrl: string | null = null;
   let configHandle: FileSystemFileHandle | null = null;
   let config: CraftingConfig = { categories: [], data: {} };
   let items: GameItem[] = [];
@@ -50,6 +52,33 @@ export async function loadProjectFiles(rootDir: FileSystemDirectoryHandle): Prom
     }
   } catch (e: any) {
     warnings.push(`.studio: ${e.message}`);
+  }
+
+  // project_icon — try common extensions, then scan root entries
+  try {
+    let iconFile: File | null = null;
+    // Direct attempts for common extensions
+    for (const ext of ['png', 'PNG', 'jpg', 'JPG', 'jpeg', 'JPEG', 'gif', 'webp']) {
+      try {
+        const h = await rootDir.getFileHandle(`project_icon.${ext}`);
+        iconFile = await h.getFile();
+        break;
+      } catch { /* try next */ }
+    }
+    // Fallback: iterate root entries
+    if (!iconFile) {
+      for await (const [name, handle] of (rootDir as any).entries()) {
+        if (handle.kind === 'file' && /^project_icon\./i.test(name)) {
+          iconFile = await (handle as FileSystemFileHandle).getFile();
+          break;
+        }
+      }
+    }
+    if (iconFile) {
+      projectIconUrl = URL.createObjectURL(iconFile);
+    }
+  } catch {
+    // no icon — fine
   }
 
   // crafting_config.json
@@ -111,7 +140,7 @@ export async function loadProjectFiles(rootDir: FileSystemDirectoryHandle): Prom
 
   if (!configHandle) throw new Error('Could not load crafting_config.json');
 
-  return { projectName, config, configHandle, items, csvHandle, csvTexts, csvLines, warnings };
+  return { projectName, projectIconUrl, config, configHandle, items, csvHandle, csvTexts, csvLines, warnings };
 }
 
 export function parseCsvText(text: string): { texts: Record<number, string>; lines: string[] } {

@@ -8,14 +8,12 @@ import styles from './CategoryManager.module.css';
 
 export const CategoryManager: React.FC = () => {
   const { lang, config, csvTexts, addCategory, deleteCategory, updateCategoryId } = useStore();
-
   const [newKey, setNewKey] = useState('');
   const [newId, setNewId] = useState('');
   const [newName, setNewName] = useState('');
 
-  const getCsvName = (id: number): string => {
-    return csvTexts[id + 1] !== undefined ? csvTexts[id + 1] : `[${id}]`;
-  };
+  const getCsvName = (id: number) =>
+    csvTexts[id + 1] !== undefined ? csvTexts[id + 1] : `[${id}]`;
 
   const handleAdd = async () => {
     const key = newKey.trim().toLowerCase().replace(/\s+/g, '_');
@@ -29,76 +27,60 @@ export const CategoryManager: React.FC = () => {
   return (
     <div className={styles.root}>
       <div className={styles.head}>
-        <h2>🏷 {t(lang, 'categories_tab')}</h2>
+        <h2>{t(lang, 'categories_tab')}</h2>
         <p dangerouslySetInnerHTML={{ __html: t(lang, 'cat_desc') }} />
       </div>
 
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>{t(lang, 'th_key')}</th>
-            <th>{t(lang, 'th_tid')}</th>
-            <th>{t(lang, 'th_name')}</th>
-            <th style={{ textAlign: 'right' }}>{t(lang, 'th_act')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(config.categories || []).map((obj, idx) => {
-            const key = Object.keys(obj)[0];
-            const id = Object.values(obj)[0] as number;
-            return (
-              <tr key={key} className={styles.row}>
-                <td><Badge variant={catVariant(key)}>{key}</Badge></td>
-                <td>
-                  <input
-                    type="number"
-                    className={styles.idInput}
-                    value={id}
-                    onChange={(e) => updateCategoryId(idx, parseInt(e.target.value))}
-                  />
-                </td>
-                <td><span className={styles.csvName}>{getCsvName(id)}</span></td>
-                <td style={{ textAlign: 'right' }}>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm(t(lang, 'confirm_del_cat').replace('{k}', key))) {
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>{t(lang, 'th_key')}</th>
+              <th>{t(lang, 'th_tid')}</th>
+              <th>{t(lang, 'th_name')}</th>
+              <th style={{ textAlign: 'right' }}>{t(lang, 'th_act')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(config.categories || []).map((obj, idx) => {
+              const key = Object.keys(obj)[0];
+              const id = Object.values(obj)[0] as number;
+              return (
+                <tr key={key} className={styles.row}>
+                  <td><Badge variant={catVariant(key)}>{key}</Badge></td>
+                  <td>
+                    <input
+                      type="number"
+                      className={styles.idInput}
+                      value={id}
+                      onChange={(e) => updateCategoryId(idx, parseInt(e.target.value))}
+                    />
+                  </td>
+                  <td><span className={styles.csvName}>{getCsvName(id)}</span></td>
+                  <td style={{ textAlign: 'right' }}>
+                    <Button variant="danger" size="sm" onClick={() => {
+                      if (confirm(t(lang, 'confirm_del_cat').replace('{k}', key)))
                         deleteCategory(idx);
-                      }
-                    }}
-                  >
-                    🗑 {t(lang, 'delete')}
-                  </Button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    }}>
+                      {t(lang, 'delete')}
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       <div className={styles.addForm}>
-        <Input
-          value={newKey}
-          onChange={(e) => setNewKey(e.target.value)}
-          placeholder={t(lang, 'cat_key_ph')}
-          style={{ width: 150 }}
-        />
-        <Input
-          type="number"
-          value={newId}
-          onChange={(e) => setNewId(e.target.value)}
-          placeholder="Text ID"
-          style={{ width: 100 }}
-        />
-        <Input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder={t(lang, 'cat_name_ph')}
-          style={{ width: 160 }}
-        />
+        <Input value={newKey} onChange={(e) => setNewKey(e.target.value)}
+          placeholder={t(lang, 'cat_key_ph')} style={{ width: 150 }} />
+        <Input type="number" value={newId} onChange={(e) => setNewId(e.target.value)}
+          placeholder="Text ID" style={{ width: 100 }} />
+        <Input value={newName} onChange={(e) => setNewName(e.target.value)}
+          placeholder={t(lang, 'cat_name_ph')} style={{ width: 160 }} />
         <Button variant="primary" size="sm" onClick={handleAdd}>
-          ＋ {t(lang, 'add')}
+          + {t(lang, 'add')}
         </Button>
         <span className={styles.autoSaveHint}>{t(lang, 'auto_save')}</span>
       </div>

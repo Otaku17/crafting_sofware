@@ -1,97 +1,79 @@
 .titlebar {
-  height: var(--titlebar-h);
-  min-height: var(--titlebar-h);
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  gap: 12px;
-  flex-shrink: 0;
+  height: var(--titlebar-h); min-height: var(--titlebar-h);
+  background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; padding: 0 18px; gap: 10px; flex-shrink: 0;
 }
-
-.logo {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent-hover);
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-}
-
-.sep {
-  width: 1px;
-  height: 16px;
-  background: var(--border-strong);
-  flex-shrink: 0;
-}
-
-.proj {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 240px;
-}
-.proj strong { color: var(--text-primary); font-weight: 600; }
-.proj em     { color: var(--text-muted); font-style: normal; }
-
-.spacer { flex: 1; }
-
-/* Lang switch */
-.langSwitch {
-  display: flex;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
+.brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.brandIcon {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
   border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
   overflow: hidden;
 }
-.langBtn {
-  padding: 3px 10px;
-  font-size: 10px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  transition: background var(--t-base), color var(--t-base);
-  letter-spacing: 0.06em;
+/* When a project is loaded, the icon fills the whole brandIcon box */
+.brandProjectIcon {
+  width: 28px; height: 28px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border-radius: var(--radius-md);
 }
-.langBtn:hover { color: var(--text-secondary); }
-.langActive {
-  background: var(--accent) !important;
-  color: #fff !important;
+.brandName { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+.brandChip {
+  font-size: 9.5px; font-weight: 700; font-family: var(--font-mono);
+  color: var(--text-muted); background: var(--bg-surface);
+  border: 1px solid var(--border-default); border-radius: var(--radius-xs);
+  padding: 1px 5px; letter-spacing: 0.08em; text-transform: uppercase;
 }
+.divider { width: 1px; height: 18px; background: var(--border-default); flex-shrink: 0; margin: 0 2px; }
+.project { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.projectIcon {
+  width: 20px; height: 20px; border-radius: var(--radius-xs);
+  object-fit: contain; flex-shrink: 0; image-rendering: pixelated;
+}
+.projectName {
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;
+}
+.dirtyDot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--yellow);
+  flex-shrink: 0; box-shadow: 0 0 6px var(--yellow);
+}
+.spacer { flex: 1; }
 
 /* Status */
 .status {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  font-family: var(--font-mono);
-  color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500;
+  padding: 4px 11px; border-radius: var(--radius-sm); border: 1px solid transparent;
 }
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-muted);
-  flex-shrink: 0;
-  transition: background var(--t-slow), box-shadow var(--t-slow);
+.statusDot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.statusOk  { background: var(--green-subtle); color: var(--green); border-color: var(--green-muted); }
+.statusOk  .statusDot { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.statusWarn { background: var(--yellow-subtle); color: var(--yellow); border-color: var(--yellow-muted); }
+.statusWarn .statusDot { background: var(--yellow); box-shadow: 0 0 4px var(--yellow); }
+
+/* Controls group */
+.controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+/* Segmented */
+.segmented {
+  display: flex; background: var(--bg-surface);
+  border: 1px solid var(--border-default); border-radius: var(--radius-sm); overflow: hidden;
 }
-.dotOk {
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
+.segBtn {
+  padding: 4px 11px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em;
+  cursor: pointer; border: none; background: transparent; color: var(--text-muted);
+  transition: all var(--t-base);
 }
-.dotWarn {
-  background: var(--yellow);
-  box-shadow: 0 0 6px var(--yellow);
+.segBtn:hover { color: var(--text-secondary); }
+.segActive { background: var(--accent) !important; color: #fff !important; }
+
+/* Theme btn */
+.themeBtn {
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md); background: var(--bg-surface);
+  border: 1px solid var(--border-default); color: var(--text-secondary);
+  transition: all var(--t-base);
 }
-.statusLabel {
-  font-size: 10px;
-  letter-spacing: 0.04em;
-}
+.themeBtn:hover { background: var(--bg-overlay); color: var(--text-primary); border-color: var(--border-strong); }

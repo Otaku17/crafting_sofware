@@ -2,46 +2,79 @@ import React from 'react';
 import { useStore } from '../../store';
 import styles from './TitleBar.module.css';
 
+const HammerIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m15 12-8.5 8.5a2.12 2.12 0 0 1-3-3L12 9"/>
+    <path d="M17.64 15 22 10.64"/>
+    <path d="m20.91 11.7-1.25-1.25c.15-.48.23-.98.23-1.45a5 5 0 0 0-5-5 4.83 4.83 0 0 0-1.46.23L12.2 3l2.73-2.73C16 .1 17.47 0 18 0a6 6 0 0 1 6 6c0 .52-.1 2-.7 3.28l-3.39-3.39A2 2 0 0 0 18 5"/>
+  </svg>
+);
+const SunIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+  </svg>
+);
+const MoonIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+);
+
 export const TitleBar: React.FC = () => {
-  const { lang, setLang, projectName, configHandle, dirty } = useStore();
+  const { projectName, projectIconUrl, configHandle, dirty, theme, setTheme, lang, setLang } = useStore();
 
   return (
     <header className={styles.titlebar}>
-      <span className={styles.logo}>⚒ CRAFTING EDITOR</span>
-      <div className={styles.sep} />
-      <span className={styles.proj}>
-        {projectName ? <strong>{projectName}</strong> : <em>No project</em>}
-      </span>
+      {/* Brand — always visible */}
+      <div className={styles.brand}>
+        <div className={styles.brandIcon}>
+          {projectIconUrl
+            ? <img src={projectIconUrl} alt="" className={styles.brandProjectIcon} />
+            : <HammerIcon />
+          }
+        </div>
+        <span className={styles.brandName}>Crafting Editor</span>
+        <span className={styles.brandChip}>PSDK</span>
+      </div>
+
+      {/* Project name — only when loaded */}
+      {projectName && (
+        <>
+          <div className={styles.divider} />
+          <div className={styles.project}>
+            <span className={styles.projectName}>{projectName}</span>
+            {dirty && <span className={styles.dirtyDot} title="Unsaved changes" />}
+          </div>
+        </>
+      )}
 
       <div className={styles.spacer} />
 
-      <div className={styles.langSwitch}>
-        <button
-          className={`${styles.langBtn} ${lang === 'en' ? styles.langActive : ''}`}
-          onClick={() => setLang('en')}
-        >
-          EN
-        </button>
-        <button
-          className={`${styles.langBtn} ${lang === 'fr' ? styles.langActive : ''}`}
-          onClick={() => setLang('fr')}
-        >
-          FR
-        </button>
+      {/* Saved/unsaved status */}
+      {configHandle && (
+        <div className={`${styles.status} ${dirty ? styles.statusWarn : styles.statusOk}`}>
+          <span className={styles.statusDot} />
+          <span>{dirty ? 'Unsaved' : 'Saved'}</span>
+        </div>
+      )}
+
+      <div className={styles.divider} />
+
+      {/* Language segmented */}
+      <div className={styles.segmented}>
+        <button className={`${styles.segBtn} ${lang === 'en' ? styles.segActive : ''}`} onClick={() => setLang('en')}>EN</button>
+        <button className={`${styles.segBtn} ${lang === 'fr' ? styles.segActive : ''}`} onClick={() => setLang('fr')}>FR</button>
       </div>
 
-      <div className={styles.sep} />
-
-      <div className={styles.status}>
-        <span
-          className={`${styles.dot} ${
-            !configHandle ? '' : dirty ? styles.dotWarn : styles.dotOk
-          }`}
-        />
-        <span className={styles.statusLabel}>
-          {!configHandle ? '—' : dirty ? 'Unsaved' : 'Saved'}
-        </span>
-      </div>
+      {/* Theme toggle */}
+      <button
+        className={styles.themeBtn}
+        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+      >
+        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+      </button>
     </header>
   );
 };

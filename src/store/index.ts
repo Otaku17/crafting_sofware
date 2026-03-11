@@ -14,6 +14,7 @@ interface AppState {
   // Project
   rootDir: FileSystemDirectoryHandle | null;
   projectName: string;
+  projectIconUrl: string | null;
   items: GameItem[];
   csvTexts: Record<number, string>;
   csvLines: string[];
@@ -27,11 +28,13 @@ interface AppState {
   // UI
   lang: Lang;
   activeTab: TabId;
+  theme: 'dark' | 'light';
   toasts: ToastEntry[];
 
   // Actions
   setLang: (l: Lang) => void;
   setActiveTab: (t: TabId) => void;
+  setTheme: (t: 'dark' | 'light') => void;
   openProject: () => Promise<void>;
   saveAll: () => Promise<void>;
   addToast: (message: string, type?: ToastType) => void;
@@ -69,6 +72,7 @@ function getCondByPath(root: Condition, path: string): Condition {
 export const useStore = create<AppState>((set, get) => ({
   rootDir: null,
   projectName: '',
+  projectIconUrl: null,
   items: [],
   csvTexts: {},
   csvLines: [],
@@ -80,10 +84,16 @@ export const useStore = create<AppState>((set, get) => ({
   currentKey: null,
   lang: 'en',
   activeTab: 'recipe',
+  theme: (localStorage.getItem('theme') as 'dark' | 'light') || 'dark',
   toasts: [],
 
   setLang: (l) => set({ lang: l }),
   setActiveTab: (t) => set({ activeTab: t }),
+  setTheme: (t) => {
+    localStorage.setItem('theme', t);
+    document.documentElement.setAttribute('data-theme', t);
+    set({ theme: t });
+  },
 
   addToast: (message, type = 'ok') => {
     const id = genId();
@@ -121,6 +131,7 @@ export const useStore = create<AppState>((set, get) => ({
       set({
         rootDir,
         projectName: result.projectName,
+        projectIconUrl: result.projectIconUrl,
         config: result.config,
         configHandle: result.configHandle,
         items: result.items,

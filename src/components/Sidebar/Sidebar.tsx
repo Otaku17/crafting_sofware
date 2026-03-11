@@ -4,6 +4,18 @@ import { t } from '../../utils/i18n';
 import { Badge, catVariant } from '../layout/Badge';
 import styles from './Sidebar.module.css';
 
+const SearchIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
+const TagIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+    <line x1="7" y1="7" x2="7.01" y2="7"/>
+  </svg>
+);
+
 interface SidebarProps {
   onManageCategories: () => void;
 }
@@ -16,7 +28,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onManageCategories }) => {
   const filtered = filter
     ? keys.filter((k) => {
         const r = config.data[k];
-        return k.includes(filter.toLowerCase()) || (r.category || '').includes(filter.toLowerCase());
+        return k.toLowerCase().includes(filter.toLowerCase())
+          || (r.category || '').toLowerCase().includes(filter.toLowerCase());
       })
     : keys;
 
@@ -28,12 +41,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onManageCategories }) => {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.head}>
-        <h3 className={styles.headTitle}>{t(lang, 'recipes')}</h3>
+        <span className={styles.headTitle}>{t(lang, 'recipes')}</span>
         <span className={styles.count}>{keys.length}</span>
       </div>
 
       <div className={styles.search}>
-        <span className={styles.searchIcon}>⌕</span>
+        <span className={styles.searchIcon}><SearchIcon /></span>
         <input
           type="text"
           className={styles.searchInput}
@@ -44,15 +57,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onManageCategories }) => {
       </div>
 
       <div className={styles.list}>
+        {filtered.length === 0 && (
+          <div className={styles.empty}>No results</div>
+        )}
         {filtered.map((key) => {
           const cat = config.data[key].category || 'all';
-          const isActive = key === currentKey;
-          const isDirty = dirtyKeys.has(key);
-
           return (
             <div
               key={key}
-              className={`${styles.item} ${isActive ? styles.active : ''} ${isDirty ? styles.dirty : ''}`}
+              className={`${styles.item} ${key === currentKey ? styles.active : ''} ${dirtyKeys.has(key) ? styles.dirty : ''}`}
               onClick={() => openRecipe(key)}
             >
               <span className={styles.itemKey}>{key}</span>
@@ -64,7 +77,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onManageCategories }) => {
 
       <div className={styles.foot}>
         <button className={styles.catBtn} onClick={onManageCategories}>
-          🏷 {t(lang, 'manage_cats')}
+          <TagIcon />
+          <span>{t(lang, 'manage_cats')}</span>
         </button>
       </div>
     </aside>

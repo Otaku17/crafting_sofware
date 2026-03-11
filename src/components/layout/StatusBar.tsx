@@ -1,50 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useStore } from '../../store';
 import styles from './StatusBar.module.css';
 
 export const StatusBar: React.FC = () => {
-  const { rootDir, items, csvTexts, config } = useStore();
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
-  const [installed, setInstalled] = useState(false);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-
-  useEffect(() => {
-    const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e); };
-    window.addEventListener('beforeinstallprompt', handler);
-    window.addEventListener('appinstalled', () => setInstalled(true));
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  const handleInstall = async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') { setInstallPrompt(null); setInstalled(true); }
-  };
-
-  const supported = !!window.showDirectoryPicker;
+  const { projectName, items, config, csvTexts, configHandle } = useStore();
+  const recipeCount = Object.keys(config.data).length;
+  const csvCount = Object.keys(csvTexts).length;
+  const hasFS = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
   return (
     <footer className={styles.bar}>
-      <span>{rootDir ? rootDir.name : 'No project'}</span>
-      <div className={styles.sep} />
-      <span>{items.length} items</span>
-      <div className={styles.sep} />
-      <span>{Object.keys(csvTexts).length} CSV</span>
-      <div className={styles.sep} />
-      <span>{Object.keys(config.data).length} recipes</span>
-      <div style={{ flex: 1 }} />
-      {!supported && (
-        <span className={styles.warn}>⚠ Use Chrome or Edge for File System API</span>
+      {projectName && <span className={styles.item}>{projectName}</span>}
+      {projectName && <span className={styles.sep}>|</span>}
+      {configHandle && (
+        <>
+          <span className={styles.item}>{items.length} items</span>
+          <span className={styles.sep}>|</span>
+          <span className={styles.item}>{csvCount} CSV</span>
+          <span className={styles.sep}>|</span>
+          <span className={styles.item}>{recipeCount} recipes</span>
+        </>
       )}
-      {supported && !isStandalone && !installed && installPrompt && (
-        <button className={styles.installBtn} onClick={handleInstall}>
-          ⬇ Install app
-        </button>
+      {!hasFS && (
+        <>
+          <span className={styles.sep}>|</span>
+          <span className={styles.warn}>Chrome / Edge required</span>
+        </>
       )}
-      {(isStandalone || installed) && (
-        <span className={styles.pwaTag}>● PWA</span>
-      )}
+      <div className={styles.spacer} />
+      <span className={styles.pwaTag}>PWA</span>
     </footer>
   );
 };

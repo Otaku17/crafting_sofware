@@ -12,21 +12,20 @@ import { StatusBar } from './components/layout/StatusBar';
 import { UpdatePrompt } from './components/layout/UpdatePrompt';
 import styles from './App.module.css';
 
+const TABS = [
+  { id: 'recipe' as const, label: 'Recipe' },
+  { id: 'cat'    as const, label: 'Categories' },
+  { id: 'json'   as const, label: 'JSON' },
+];
+
 export const App: React.FC = () => {
-  const { activeTab, setActiveTab, saveAll, configHandle, openProject } = useStore();
+  const { activeTab, setActiveTab, saveAll, configHandle, openProject, dirty } = useStore();
   const [newRecipeOpen, setNewRecipeOpen] = useState(false);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (configHandle) saveAll();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
-        e.preventDefault();
-        openProject();
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); if (configHandle) saveAll(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'o') { e.preventDefault(); openProject(); }
       if (e.key === 'Escape') setNewRecipeOpen(false);
     };
     window.addEventListener('keydown', handler);
@@ -42,20 +41,21 @@ export const App: React.FC = () => {
         <Sidebar onManageCategories={() => setActiveTab('cat')} />
 
         <main className={styles.main}>
-          {/* Tab bar */}
           <div className={styles.tabs}>
-            {(['recipe', 'cat', 'json'] as const).map((tab) => (
+            {TABS.map(({ id, label }) => (
               <button
-                key={tab}
-                className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab(tab)}
+                key={id}
+                className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${!configHandle ? styles.tabDisabled : ''}`}
+                onClick={() => configHandle && setActiveTab(id)}
+                title={!configHandle ? 'Open a project first' : undefined}
+                disabled={!configHandle}
               >
-                {tab === 'recipe' ? 'Recipe' : tab === 'cat' ? 'Categories' : 'JSON'}
+                {label}
+                {id === 'recipe' && dirty && <span className={styles.tabDot} />}
               </button>
             ))}
           </div>
 
-          {/* Panels */}
           <div className={styles.panels}>
             {activeTab === 'recipe' && <RecipeEditor />}
             {activeTab === 'cat'    && <CategoryManager />}

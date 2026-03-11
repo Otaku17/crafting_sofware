@@ -1,65 +1,41 @@
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
+.app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.body { flex: 1; display: flex; overflow: hidden; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-base); }
 
-.body {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Tab bar */
+/* ── Tab bar — style PSDK avec tab active en fond card */
 .tabs {
-  height: 36px;
-  min-height: 36px;
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: flex-end;
-  padding: 0 12px;
-  gap: 2px;
-  flex-shrink: 0;
+  height: 42px; min-height: 42px;
+  background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: flex-end; padding: 0 20px; gap: 2px; flex-shrink: 0;
 }
-
 .tab {
-  padding: 0 16px;
-  height: 30px;
+  display: flex; align-items: center; gap: 7px;
+  padding: 0 16px; height: 34px;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
-  border: 1px solid transparent;
-  border-bottom: none;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--text-muted);
-  background: transparent;
-  transition: color var(--t-base), background var(--t-base);
-  font-family: var(--font-display);
+  border: 1px solid transparent; border-bottom: none;
+  font-size: 13px; font-weight: 500; font-family: var(--font-ui);
+  cursor: pointer; color: var(--text-muted); background: transparent;
+  transition: all var(--t-base); letter-spacing: -0.01em;
+  position: relative;
 }
-.tab:hover {
-  color: var(--text-primary);
-  background: var(--bg-surface);
-}
+.tab:hover { color: var(--text-secondary); background: var(--bg-surface); }
 .tabActive {
   color: var(--text-primary) !important;
-  background: var(--bg-surface) !important;
+  background: var(--bg-base) !important;
   border-color: var(--border-default) !important;
-  border-bottom-color: var(--bg-surface) !important;
+  border-bottom-color: var(--bg-base) !important;
+  font-weight: 600;
+}
+.tabDisabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-/* Panels */
-.panels {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+/* Dot indicator on dirty recipe tab */
+.tabDot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--yellow); box-shadow: 0 0 4px var(--yellow);
 }
+
+.panels { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
