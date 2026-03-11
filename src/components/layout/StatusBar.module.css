@@ -1,0 +1,42 @@
+.bar {
+  height: var(--statusbar-h);
+  min-height: var(--statusbar-h);
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+.sep {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+.warn {
+  color: var(--yellow);
+  font-weight: 700;
+}
+.installBtn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 9px;
+  cursor: pointer;
+  transition: background var(--t-base);
+}
+.installBtn:hover { background: rgba(255,255,255,0.25); }
+.pwaTag {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 0.08em;
+}

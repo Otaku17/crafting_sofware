@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
+
+/* ── DESIGN TOKENS ─────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-base:       #080a0f;
+  --bg-elevated:   #0e1018;
+  --bg-surface:    #131722;
+  --bg-overlay:    #191f2e;
+  --bg-raised:     #1e2538;
+
+  /* Borders */
+  --border-subtle:  #1e2538;
+  --border-default: #252d42;
+  --border-strong:  #2e3a54;
+
+  /* Brand / Accent */
+  --accent:         #5b6af0;
+  --accent-hover:   #7c8fff;
+  --accent-glow:    rgba(91, 106, 240, 0.35);
+  --accent-subtle:  rgba(91, 106, 240, 0.12);
+  --accent-muted:   rgba(91, 106, 240, 0.25);
+
+  /* Semantic colors */
+  --green:          #3dd68c;
+  --green-subtle:   rgba(61, 214, 140, 0.12);
+  --green-muted:    rgba(61, 214, 140, 0.25);
+  --red:            #f0526e;
+  --red-subtle:     rgba(240, 82, 110, 0.12);
+  --red-muted:      rgba(240, 82, 110, 0.25);
+  --yellow:         #f0b429;
+  --yellow-subtle:  rgba(240, 180, 41, 0.12);
+  --yellow-muted:   rgba(240, 180, 41, 0.28);
+  --cyan:           #38d4e0;
+  --cyan-subtle:    rgba(56, 212, 224, 0.1);
+  --cyan-muted:     rgba(56, 212, 224, 0.25);
+  --purple:         #a855f7;
+  --purple-subtle:  rgba(168, 85, 247, 0.1);
+  --purple-muted:   rgba(168, 85, 247, 0.25);
+
+  /* Typography */
+  --text-primary:   #e2e6f0;
+  --text-secondary: #8892aa;
+  --text-muted:     #454e66;
+  --text-disabled:  #2e3a54;
+
+  /* Typography scale */
+  --font-mono:   'JetBrains Mono', 'Fira Code', monospace;
+  --font-display: 'Syne', system-ui, sans-serif;
+
+  /* Sizing */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+
+  /* Shadows */
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md:   0 4px 24px rgba(0, 0, 0, 0.55);
+  --shadow-lg:   0 8px 48px rgba(0, 0, 0, 0.65);
+  --shadow-glow: 0 0 24px var(--accent-glow);
+
+  /* Layout */
+  --titlebar-h:  42px;
+  --toolbar-h:   38px;
+  --sidebar-w:   248px;
+  --statusbar-h: 24px;
+
+  /* Transitions */
+  --t-fast:  80ms ease;
+  --t-base:  140ms ease;
+  --t-slow:  260ms ease;
+}
+
+/* ── RESET ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-display);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ── SCROLLBAR ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ── INPUT / SELECT RESET ──────────────────────────────────── */
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+}
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+}
+
+/* ── UTILITIES ─────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
