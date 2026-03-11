@@ -23,14 +23,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install dependencies
         run: npm install
 
       - name: Build
-        # VITE_BASE must match your GitHub repo name, e.g. /crafting-editor/
-        # Change the value below to match YOUR repo name.
         run: npm run build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
