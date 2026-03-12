@@ -7,7 +7,7 @@
   background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: var(--radius-md); padding: 12px 14px;
 }
-.condRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.condRow { display: flex; align-items: center; gap: 8px; }
 .condTag {
   font-family: var(--font-mono); font-size: 10px; font-weight: 700;
   padding: 3px 8px; border-radius: var(--radius-xs); border: 1px solid transparent;
@@ -27,20 +27,23 @@
   border-radius: var(--radius-md); padding: 14px 16px;
 }
 .opHead {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 8px;
   padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle);
+}
+.opAddBtns {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
 }
 .opChildren {
   border-left: 2px solid var(--purple-muted); padding-left: 14px;
   display: flex; flex-direction: column; gap: 8px;
 }
-.childRow { display: flex; align-items: flex-start; gap: 8px; }
+.childRow { display: flex; align-items: center; gap: 8px; }
 
 .removeBtn {
   width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-sm); background: transparent; color: var(--text-muted);
   border: 1px solid transparent; cursor: pointer; transition: all var(--t-base); flex-shrink: 0;
-  margin-top: 2px;
 }
 .removeBtn:hover { background: var(--red-subtle); color: var(--red); border-color: var(--red-muted); }
 

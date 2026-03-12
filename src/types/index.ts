@@ -63,6 +63,7 @@ export interface CraftingConfig {
 export interface GameItem {
   dbSymbol: string;
   name?: string;
+  icon?: string;
   [key: string]: unknown;
 }
 

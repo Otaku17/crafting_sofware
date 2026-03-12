@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 import { t } from '../../utils/i18n';
 import { Button } from '../layout/Button';
-import { FormGroup, Select, Input } from '../layout/Form';
+import { FormGroup, Select, SearchSelect, Input } from '../layout/Form';
 import styles from './Modal.module.css';
 
 interface NewRecipeModalProps {
@@ -24,32 +24,32 @@ export const NewRecipeModal: React.FC<NewRecipeModalProps> = ({ open, onClose })
         return [...extra].sort();
       })();
 
-  const catOptions = (config.categories || []).map((c) => Object.keys(c)[0]);
+  // Exclude "all" from category picker
+  const catOptions = (config.categories || [])
+    .map((c) => Object.keys(c)[0])
+    .filter((k) => k !== 'all');
 
   const [item, setItem] = useState(itemOptions[0] ?? '');
-  const [cat, setCat] = useState(catOptions[0] ?? 'all');
+  const [cat, setCat] = useState(catOptions[0] ?? '');
   const [qty, setQty] = useState(1);
 
   useEffect(() => {
     if (open) {
       setItem(itemOptions[0] ?? '');
-      setCat(catOptions[0] ?? 'all');
+      setCat(catOptions[0] ?? '');
       setQty(1);
     }
   }, [open]);
 
+  const alreadyExists = !!item && !!config.data[item];
+
   const handleCreate = async () => {
-    if (!item) return;
+    if (!item || alreadyExists) return;
     await createRecipe(item, cat, qty);
     onClose();
   };
 
   if (!open) return null;
-
-  // Compute preview key
-  let previewKey = item;
-  let i = 2;
-  while (config.data[previewKey]) previewKey = `${item}_${i++}`;
 
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -58,15 +58,24 @@ export const NewRecipeModal: React.FC<NewRecipeModalProps> = ({ open, onClose })
         <p className={styles.desc}>{t(lang, 'nr_desc')}</p>
 
         <FormGroup label={t(lang, 'nr_item')} className={styles.field}>
-          <Select value={item} onChange={(e) => setItem(e.target.value)}>
+          <SearchSelect value={item} onChange={(e) => setItem(e.target.value)} placeholder="Search items…">
             {itemOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-          </Select>
+          </SearchSelect>
         </FormGroup>
+
+        {/* Duplicate warning */}
+        {alreadyExists && (
+          <div className={styles.errorBanner}>
+            ⚠ A recipe for <strong>{item}</strong> already exists
+          </div>
+        )}
 
         <FormGroup label={t(lang, 'nr_cat')} className={styles.field}>
           <Select value={cat} onChange={(e) => setCat(e.target.value)}>
-            {catOptions.length === 0 && <option value="all">all</option>}
-            {catOptions.map((k) => <option key={k} value={k}>{k}</option>)}
+            {catOptions.length === 0
+              ? <option value="" disabled>No categories</option>
+              : catOptions.map((k) => <option key={k} value={k}>{k}</option>)
+            }
           </Select>
         </FormGroup>
 
@@ -76,12 +85,16 @@ export const NewRecipeModal: React.FC<NewRecipeModalProps> = ({ open, onClose })
 
         <div className={styles.preview}>
           <span className={styles.previewLabel}>{t(lang, 'key_prev')}</span>
-          <span className={styles.previewKey}>{previewKey || '—'}</span>
+          <span className={`${styles.previewKey} ${alreadyExists ? styles.previewKeyError : ''}`}>
+            {item || '—'}
+          </span>
         </div>
 
         <div className={styles.actions}>
           <Button variant="ghost" onClick={onClose}>{t(lang, 'cancel')}</Button>
-          <Button variant="primary" onClick={handleCreate}>{t(lang, 'create')}</Button>
+          <Button variant="primary" onClick={handleCreate} disabled={!item || alreadyExists}>
+            {t(lang, 'create')}
+          </Button>
         </div>
       </div>
     </div>

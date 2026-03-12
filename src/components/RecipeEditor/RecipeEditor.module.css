@@ -9,6 +9,58 @@
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 12px; text-align: center; padding: 60px 40px;
 }
+.noProjectSquare {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+
+.dropZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 48px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: border-color var(--t-base), background var(--t-base);
+  text-align: center;
+  max-width: 340px;
+}
+.dropZone:hover {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+.dropZone:hover .dropIcon { color: var(--accent); }
+
+.dropIcon {
+  color: var(--text-muted);
+  transition: color var(--t-base);
+}
+.dropTitle {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.dropDesc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin: 0;
+}
+.dropDesc code {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--accent-subtle);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+}
 .emptyIcon { color: var(--text-muted); opacity: 0.4; margin-bottom: 4px; }
 .empty h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-secondary); }
 .empty p  { font-size: 13px; color: var(--text-muted); line-height: 1.7; max-width: 300px; }
@@ -23,6 +75,12 @@
   padding-bottom: 22px; border-bottom: 1px solid var(--border-subtle);
 }
 .headerLeft { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.recipeIcon {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
 .recipeKey {
   font-family: var(--font-mono); font-size: 18px; font-weight: 700;
   color: var(--text-primary); letter-spacing: -0.01em;
@@ -36,7 +94,7 @@
 }
 .headerActions { display: flex; gap: 8px; flex-shrink: 0; }
 
-/* ── Fields row — ergonomie : labels clairs, grille proportionnelle */
+/* ── Fields row — ergonomics: clear labels, proportional grid */
 .fieldRow {
   display: grid; grid-template-columns: 1fr 120px 140px; gap: 14px;
 }
@@ -55,4 +113,11 @@
 .sectionTitle {
   font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--text-secondary);
+  white-space: nowrap; flex-shrink: 0;
+}
+/* sectionActions always pushed to far right */
+.sectionActions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+/* Any other inline control (e.g. type select) also pushed right */
+.sectionHead > :last-child:not(.sectionDot):not(.sectionTitle):not(.sectionActions) {
+  margin-left: auto;
 }

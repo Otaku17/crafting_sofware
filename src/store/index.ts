@@ -10,19 +10,39 @@ function genId() {
   return Math.random().toString(36).slice(2);
 }
 
+// Simple CSV line parser that handles quoted fields
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let cur = '';
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuote = !inQuote; }
+    else if (ch === ',' && !inQuote) { result.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  result.push(cur);
+  return result;
+}
+
 interface AppState {
   // Project
   rootDir: FileSystemDirectoryHandle | null;
   projectName: string;
   projectIconUrl: string | null;
   items: GameItem[];
+  itemIcons: Record<string, string>;
   csvTexts: Record<number, string>;
   csvLines: string[];
+  csvSnapshot: string[] | null;  // lines before any pending edits
+  csvDirty: boolean;
   csvHandle: FileSystemFileHandle | null;
   configHandle: FileSystemFileHandle | null;
   config: CraftingConfig;
   dirty: boolean;
   dirtyKeys: Set<string>;
+  /** Snapshot of each recipe taken at the moment it first became dirty */
+  snapshots: Record<string, Recipe>;
   currentKey: string | null;
 
   // UI
@@ -30,6 +50,8 @@ interface AppState {
   activeTab: TabId;
   theme: 'dark' | 'light';
   toasts: ToastEntry[];
+  missingFilesWarnings: string[];
+  missingFilesOpen: boolean;
 
   // Actions
   setLang: (l: Lang) => void;
@@ -40,11 +62,15 @@ interface AppState {
   addToast: (message: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
   markDirty: (key?: string | null) => void;
+  snapshotIfClean: (key: string) => void;
+  closeMissingFiles: () => void;
 
   // Recipes
   setCurrentKey: (key: string | null) => void;
   createRecipe: (item: string, cat: string, qty: number) => Promise<void>;
   deleteRecipe: (key: string) => Promise<void>;
+  renameRecipe: (oldKey: string, newKey: string) => void;
+  discardRecipe: (key: string) => void;
   updateRecipeField: <K extends keyof Recipe>(key: string, field: K, value: Recipe[K]) => void;
   updateIngredient: (recipeKey: string, oldItem: string, newItem: string | null, qty: number | null) => void;
   addIngredient: (recipeKey: string) => void;
@@ -57,6 +83,9 @@ interface AppState {
   // Categories
   addCategory: (key: string, id: number, name: string) => Promise<void>;
   updateCategoryId: (idx: number, val: number) => void;
+  updateCategoryTranslation: (lineIdx: number, colIdx: number, value: string) => void;
+  saveCsv: () => Promise<void>;
+  discardCsv: () => void;
   deleteCategory: (idx: number) => Promise<void>;
 }
 
@@ -74,18 +103,24 @@ export const useStore = create<AppState>((set, get) => ({
   projectName: '',
   projectIconUrl: null,
   items: [],
+  itemIcons: {},
   csvTexts: {},
   csvLines: [],
+  csvSnapshot: null,
+  csvDirty: false,
   csvHandle: null,
   configHandle: null,
   config: { categories: [], data: {} },
   dirty: false,
   dirtyKeys: new Set(),
+  snapshots: {},
   currentKey: null,
   lang: 'en',
   activeTab: 'recipe',
   theme: (localStorage.getItem('theme') as 'dark' | 'light') || 'dark',
   toasts: [],
+  missingFilesWarnings: [],
+  missingFilesOpen: false,
 
   setLang: (l) => set({ lang: l }),
   setActiveTab: (t) => set({ activeTab: t }),
@@ -94,6 +129,7 @@ export const useStore = create<AppState>((set, get) => ({
     document.documentElement.setAttribute('data-theme', t);
     set({ theme: t });
   },
+  closeMissingFiles: () => set({ missingFilesOpen: false }),
 
   addToast: (message, type = 'ok') => {
     const id = genId();
@@ -104,13 +140,48 @@ export const useStore = create<AppState>((set, get) => ({
 
   markDirty: (key) => {
     set((s) => {
-      const next = new Set(s.dirtyKeys);
-      if (key) next.add(key);
-      return { dirty: true, dirtyKeys: next };
+      const nextKeys = new Set(s.dirtyKeys);
+      if (key) nextKeys.add(key);
+      return { dirty: true, dirtyKeys: nextKeys };
     });
   },
 
   setCurrentKey: (key) => set({ currentKey: key }),
+
+  // ── Snapshot helper — call BEFORE mutating, only first time ─────────────
+  // Not exposed on interface, used internally via get()
+  snapshotIfClean: (key) => {
+    const s = get();
+    if (!s.dirtyKeys.has(key) && s.config.data[key]) {
+      set((st) => ({
+        snapshots: {
+          ...st.snapshots,
+          [key]: JSON.parse(JSON.stringify(st.config.data[key])),
+        },
+      }));
+    }
+  },
+
+  discardRecipe: (key) => {
+    set((s) => {
+      const snap = s.snapshots[key];
+      if (!snap) return {}; // nothing to restore
+
+      const nextData = { ...s.config.data, [key]: JSON.parse(JSON.stringify(snap)) };
+      const nextDirtyKeys = new Set(s.dirtyKeys);
+      nextDirtyKeys.delete(key);
+      const nextSnaps = { ...s.snapshots };
+      delete nextSnaps[key];
+
+      return {
+        config: { ...s.config, data: nextData },
+        dirtyKeys: nextDirtyKeys,
+        snapshots: nextSnaps,
+        dirty: nextDirtyKeys.size > 0,
+      };
+    });
+    get().addToast(`"${key}" reverted`, 'info');
+  },
 
   openProject: async () => {
     if (!window.showDirectoryPicker) {
@@ -135,21 +206,24 @@ export const useStore = create<AppState>((set, get) => ({
         config: result.config,
         configHandle: result.configHandle,
         items: result.items,
+        itemIcons: result.itemIcons,
         csvHandle: result.csvHandle,
         csvTexts: result.csvTexts,
         csvLines: result.csvLines,
+        csvDirty: false,
+        csvSnapshot: null,
         dirty: false,
         dirtyKeys: new Set(),
+        snapshots: {},
         currentKey: null,
       });
 
-      const s = get();
       const recipeCount = Object.keys(result.config.data).length;
       if (result.warnings.length) {
-        get().addToast(`Warnings: ${result.warnings.join(' | ')}`, 'warn');
+        set({ missingFilesWarnings: result.warnings, missingFilesOpen: true });
       } else {
         get().addToast(
-          `✅ "${result.projectName}" — ${result.items.length} items, ${recipeCount} recipes`,
+          `"${result.projectName}" — ${result.items.length} items, ${recipeCount} recipes`,
           'ok',
         );
       }
@@ -163,8 +237,8 @@ export const useStore = create<AppState>((set, get) => ({
     if (!s.configHandle) { get().addToast('No project', 'err'); return; }
     try {
       await writeJsonToHandle(s.configHandle, s.config);
-      set({ dirty: false, dirtyKeys: new Set() });
-      get().addToast('✅ crafting_config.json', 'ok');
+      set({ dirty: false, dirtyKeys: new Set(), snapshots: {} });
+      get().addToast('crafting_config.json saved', 'ok');
     } catch (e: any) {
       get().addToast('Save error: ' + e.message, 'err');
     }
@@ -174,9 +248,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   createRecipe: async (item, cat, qty) => {
     const s = get();
-    let key = item;
-    let i = 2;
-    while (s.config.data[key]) key = `${item}_${i++}`;
+    const key = item;
+
+    if (s.config.data[key]) {
+      get().addToast(`A recipe for "${key}" already exists`, 'err');
+      return;
+    }
 
     const newConfig: CraftingConfig = {
       ...s.config,
@@ -202,7 +279,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     set({ currentKey: key, activeTab: 'recipe' });
-    get().addToast(`✅ "${key}"`, 'ok');
+    get().addToast(`"${key}" created`, 'ok');
   },
 
   deleteRecipe: async (key) => {
@@ -213,8 +290,10 @@ export const useStore = create<AppState>((set, get) => ({
 
     const newDirty = new Set(s.dirtyKeys);
     newDirty.delete(key);
+    const newSnaps = { ...s.snapshots };
+    delete newSnaps[key];
 
-    set({ config: newConfig, dirtyKeys: newDirty, currentKey: null });
+    set({ config: newConfig, dirtyKeys: newDirty, snapshots: newSnaps, currentKey: null });
 
     if (s.configHandle) {
       await writeJsonToHandle(s.configHandle, newConfig);
@@ -222,10 +301,56 @@ export const useStore = create<AppState>((set, get) => ({
     } else {
       get().markDirty(null);
     }
-    get().addToast(`🗑 "${key}"`, 'ok');
+    get().addToast(`"${key}" deleted`, 'ok');
+  },
+
+  renameRecipe: (oldKey, newKey) => {
+    if (oldKey === newKey) return;
+    const s = get();
+    if (!s.config.data[oldKey]) return;
+
+    // Refuse if target key already exists
+    if (s.config.data[newKey]) {
+      get().addToast(`"${newKey}" already exists`, 'err');
+      return;
+    }
+
+    // Preserve insertion order: rebuild data object with key replaced in place
+    const newData: typeof s.config.data = {};
+    for (const k of Object.keys(s.config.data)) {
+      if (k === oldKey) newData[newKey] = { ...s.config.data[k], result: newKey };
+      else newData[k] = s.config.data[k];
+    }
+
+    // Migrate dirty/snapshot state from old key to new key
+    const newDirtyKeys = new Set(s.dirtyKeys);
+    const newSnaps = { ...s.snapshots };
+    if (newDirtyKeys.has(oldKey)) {
+      newDirtyKeys.delete(oldKey);
+      newDirtyKeys.add(newKey);
+    }
+    if (newSnaps[oldKey]) {
+      newSnaps[newKey] = newSnaps[oldKey];
+      delete newSnaps[oldKey];
+    }
+
+    // Always mark the renamed recipe as dirty (key change = unsaved)
+    if (!newDirtyKeys.has(newKey) && s.config.data[oldKey]) {
+      newSnaps[newKey] = JSON.parse(JSON.stringify(s.config.data[oldKey]));
+      newDirtyKeys.add(newKey);
+    }
+
+    set({
+      config: { ...s.config, data: newData },
+      currentKey: newKey,
+      dirtyKeys: newDirtyKeys,
+      snapshots: newSnaps,
+      dirty: true,
+    });
   },
 
   updateRecipeField: (key, field, value) => {
+    get().snapshotIfClean(key);
     set((s) => ({
       config: {
         ...s.config,
@@ -277,9 +402,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateConditionByPath: (recipeKey, path, field, value) => {
+    get().snapshotIfClean(recipeKey);
     set((s) => {
       const recipe = s.config.data[recipeKey];
-      // Deep clone
       const cond: Condition = JSON.parse(JSON.stringify(recipe.unlock_condition));
       const node = getCondByPath(cond, path) as any;
       node[field] = value;
@@ -294,6 +419,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addChildCondition: (recipeKey, path, type) => {
+    get().snapshotIfClean(recipeKey);
     const defaults: Record<string, Condition> = {
       manual:   { type: 'manual', value: true },
       switch:   { type: 'switch', id: 0 },
@@ -314,6 +440,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   removeChildCondition: (recipeKey, path, idx) => {
+    get().snapshotIfClean(recipeKey);
     set((s) => {
       const recipe = s.config.data[recipeKey];
       const cond: Condition = JSON.parse(JSON.stringify(recipe.unlock_condition));
@@ -341,7 +468,7 @@ export const useStore = create<AppState>((set, get) => ({
     let newCsvLines = [...s.csvLines];
     let newCsvTexts = { ...s.csvTexts };
 
-    if (s.csvHandle) {
+    if (s.csvHandle && name) {
       while (newCsvLines.length <= id) newCsvLines.push('');
       newCsvLines[id] = name;
       const parsed = parseCsvText(newCsvLines.join('\n'));
@@ -363,7 +490,7 @@ export const useStore = create<AppState>((set, get) => ({
       get().markDirty(null);
     }
 
-    get().addToast(`✅ "${key}" → CSV[${id}] = "${name}"`, 'ok');
+    get().addToast(`"${key}" added → CSV[${id}] = "${name}"`, 'ok');
   },
 
   updateCategoryId: (idx, val) => {
@@ -376,11 +503,59 @@ export const useStore = create<AppState>((set, get) => ({
     get().markDirty(null);
   },
 
+  updateCategoryTranslation: (lineIdx, colIdx, value) => {
+    set((s) => {
+      const lines = [...s.csvLines];
+      // Snapshot before first edit
+      const snapshot = s.csvSnapshot ?? [...s.csvLines];
+      // Parse existing columns
+      const cols = parseCsvLine(lines[lineIdx] || '');
+      while (cols.length <= colIdx) cols.push('');
+      cols[colIdx] = value;
+      lines[lineIdx] = cols.map((c) => (c.includes(',') ? `"${c}"` : c)).join(',');
+      const { texts, lines: newLines } = parseCsvText(lines.join('\n'));
+      return { csvLines: newLines, csvTexts: texts, csvSnapshot: snapshot, csvDirty: true };
+    });
+  },
+
+  saveCsv: async () => {
+    const s = get();
+    if (!s.csvHandle) { get().addToast('No CSV file loaded', 'warn'); return; }
+    try {
+      await writeCsvToHandle(s.csvHandle, s.csvLines);
+      set({ csvDirty: false, csvSnapshot: null });
+      get().addToast('CSV saved', 'ok');
+    } catch (e: any) {
+      get().addToast('CSV write error: ' + e.message, 'err');
+    }
+  },
+
+  discardCsv: () => {
+    set((s) => {
+      if (!s.csvSnapshot) return {};
+      const { texts, lines } = parseCsvText(s.csvSnapshot.join('\n'));
+      return { csvLines: lines, csvTexts: texts, csvSnapshot: null, csvDirty: false };
+    });
+    get().addToast('CSV changes discarded', 'info');
+  },
+
   deleteCategory: async (idx) => {
     const s = get();
     const key = Object.keys(s.config.categories[idx])[0];
     const newCats = s.config.categories.filter((_, i) => i !== idx);
-    const newConfig = { ...s.config, categories: newCats };
+
+    // Recipes using this category lose their category (will appear uncategorized)
+    const newData = { ...s.config.data };
+    let migrated = 0;
+    for (const [rk, recipe] of Object.entries(newData)) {
+      if (recipe.category === key) {
+        const { category: _, ...rest } = recipe;
+        newData[rk] = rest as typeof recipe;
+        migrated++;
+      }
+    }
+
+    const newConfig = { ...s.config, categories: newCats, data: newData };
     set({ config: newConfig });
 
     if (s.configHandle) {
@@ -389,6 +564,7 @@ export const useStore = create<AppState>((set, get) => ({
     } else {
       get().markDirty(null);
     }
-    get().addToast(`🗑 "${key}"`, 'ok');
+    const hint = migrated > 0 ? ` (${migrated} recipe${migrated > 1 ? 's' : ''} uncategorized)` : '';
+    get().addToast(`"${key}" deleted${hint}`, 'ok');
   },
 }));

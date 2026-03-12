@@ -7,8 +7,8 @@ import { RecipeEditor } from './components/RecipeEditor/RecipeEditor';
 import { CategoryManager } from './components/CategoryManager/CategoryManager';
 import { JsonViewer } from './components/JsonViewer/JsonViewer';
 import { NewRecipeModal } from './components/Modal/NewRecipeModal';
+import { MissingFilesModal } from './components/Modal/MissingFilesModal';
 import { ToastContainer } from './components/Toast/Toast';
-import { StatusBar } from './components/layout/StatusBar';
 import { UpdatePrompt } from './components/layout/UpdatePrompt';
 import styles from './App.module.css';
 
@@ -19,7 +19,7 @@ const TABS = [
 ];
 
 export const App: React.FC = () => {
-  const { activeTab, setActiveTab, saveAll, configHandle, openProject, dirty } = useStore();
+  const { activeTab, setActiveTab, saveAll, configHandle, openProject, dirty, missingFilesWarnings, missingFilesOpen, closeMissingFiles } = useStore();
   const [newRecipeOpen, setNewRecipeOpen] = useState(false);
 
   useEffect(() => {
@@ -35,10 +35,10 @@ export const App: React.FC = () => {
   return (
     <div className={styles.app}>
       <TitleBar />
-      <Toolbar onNewRecipe={() => setNewRecipeOpen(true)} />
+      <Toolbar onManageCategories={() => setActiveTab('cat')} />
 
       <div className={styles.body}>
-        <Sidebar onManageCategories={() => setActiveTab('cat')} />
+        <Sidebar onNewRecipe={() => setNewRecipeOpen(true)} />
 
         <main className={styles.main}>
           <div className={styles.tabs}>
@@ -64,9 +64,9 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      <StatusBar />
       <UpdatePrompt />
       <NewRecipeModal open={newRecipeOpen} onClose={() => setNewRecipeOpen(false)} />
+      <MissingFilesModal open={missingFilesOpen} warnings={missingFilesWarnings} onClose={closeMissingFiles} />
       <ToastContainer />
     </div>
   );

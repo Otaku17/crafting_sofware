@@ -20,22 +20,11 @@ const PlusIcon = () => (
 interface ConditionEditorProps { recipeKey: string; }
 
 export const ConditionEditor: React.FC<ConditionEditorProps> = ({ recipeKey }) => {
-  const { config, lang, setRootCondition } = useStore();
+  const { config, lang } = useStore();
   const cond = config.data[recipeKey]?.unlock_condition;
-  const condType = (cond as OperatorCondition)?.operator
-    ? 'operator'
-    : (cond as SimpleCondition)?.type ?? 'manual';
 
   return (
     <div className={styles.root}>
-      <div className={styles.typeRow}>
-        <Select compact style={{ width: 'auto' }} value={condType}
-          onChange={(e) => setRootCondition(recipeKey, e.target.value)}>
-          {['manual', 'switch', 'variable', 'recipe', 'operator'].map((x) => (
-            <option key={x} value={x}>{x}</option>
-          ))}
-        </Select>
-      </div>
       {cond && <CondNode recipeKey={recipeKey} cond={cond} path="root" lang={lang} />}
     </div>
   );
@@ -62,7 +51,7 @@ const SimpleNode: React.FC<{ recipeKey: string; cond: SimpleCondition; path: str
         <span className={`${styles.condTag} ${styles[`ct_${cond.type}`]}`}>{cond.type}</span>
 
         {cond.type === 'manual' && (
-          <Select compact style={{ width: 120 }} value={String(cond.value)}
+          <Select compact fullWidth={false} style={{ width: 120 }} value={String(cond.value)}
             onChange={(e) => upd('value', e.target.value === 'true')}>
             <option value="true">{t(lang as any, 'unlocked')}</option>
             <option value="false">{t(lang as any, 'locked')}</option>
@@ -86,9 +75,8 @@ const SimpleNode: React.FC<{ recipeKey: string; cond: SimpleCondition; path: str
           </>
         )}
         {cond.type === 'recipe' && (
-          <Select compact style={{ minWidth: 140 }} value={cond.key}
+          <Select compact fullWidth={false} style={{ width: 200, maxWidth: 300 }} value={cond.key}
             onChange={(e) => upd('key', e.target.value)}>
-            <option value="">— {t(lang as any, 'choose')} —</option>
             {recipeKeys.map((k) => <option key={k} value={k}>{k}</option>)}
           </Select>
         )}
@@ -106,18 +94,19 @@ const OpNode: React.FC<{ recipeKey: string; cond: OperatorCondition; path: strin
     <div className={styles.opNode}>
       <div className={styles.opHead}>
         <span className={`${styles.condTag} ${styles.ct_operator}`}>OPERATOR</span>
-        <Select compact style={{ width: 'auto' }} value={cond.operator}
+        <Select compact fullWidth={false} style={{ width: 'auto' }} value={cond.operator}
           onChange={(e) => updateConditionByPath(recipeKey, path, 'operator', e.target.value)}>
           <option value="and">AND</option>
           <option value="or">OR</option>
         </Select>
-        <div style={{ flex: 1 }} />
-        {(['manual', 'switch', 'variable', 'recipe'] as const).map((type) => (
-          <Button key={type} variant="ghost" size="sm"
-            onClick={() => addChildCondition(recipeKey, path, type)}>
-            <PlusIcon /> {type}
-          </Button>
-        ))}
+        <div className={styles.opAddBtns}>
+          {(['manual', 'switch', 'variable', 'recipe'] as const).map((type) => (
+            <Button key={type} variant="ghost" size="sm"
+              onClick={() => addChildCondition(recipeKey, path, type)}>
+              <PlusIcon /> {type}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className={styles.opChildren}>

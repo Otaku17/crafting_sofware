@@ -2,10 +2,28 @@ import React from 'react';
 import { useStore } from '../../store';
 import { t } from '../../utils/i18n';
 import { Button } from '../layout/Button';
-import { FormGroup, Select, Input } from '../layout/Form';
+import { FormGroup, Select, SearchSelect, Input } from '../layout/Form';
 import { IngredientsEditor } from './IngredientsEditor';
 import { ConditionEditor } from './ConditionEditor';
 import styles from './RecipeEditor.module.css';
+import type { OperatorCondition, SimpleCondition } from '../../types';
+
+// Small inline component so RecipeEditor doesn't need to know about condition internals
+const ConditionTypeSelect: React.FC<{ recipeKey: string }> = ({ recipeKey }) => {
+  const { config, setRootCondition } = useStore();
+  const cond = config.data[recipeKey]?.unlock_condition;
+  const condType = (cond as OperatorCondition)?.operator
+    ? 'operator'
+    : (cond as SimpleCondition)?.type ?? 'manual';
+  return (
+    <Select compact fullWidth={false} style={{ width: 'auto', flexShrink: 0 }} value={condType}
+      onChange={(e) => setRootCondition(recipeKey, e.target.value)}>
+      {['manual', 'switch', 'variable', 'recipe', 'operator'].map((x) => (
+        <option key={x} value={x}>{x}</option>
+      ))}
+    </Select>
+  );
+};
 
 const SaveIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -41,14 +59,27 @@ const ListIcon = () => (
   </svg>
 );
 
+const DiscardIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+    <path d="M3 3v5h5"/>
+  </svg>
+);
+
 export const RecipeEditor: React.FC = () => {
-  const { lang, config, currentKey, configHandle, dirtyKeys, saveAll, deleteRecipe, updateRecipeField, items, addIngredient } = useStore();
+  const { lang, config, currentKey, configHandle, dirtyKeys, saveAll, deleteRecipe, discardRecipe, renameRecipe, updateRecipeField, items, addIngredient, openProject, itemIcons } = useStore();
 
   if (!configHandle) return (
     <div className={styles.empty}>
-      <div className={styles.emptyIcon}><MonitorIcon /></div>
-      <h3>{t(lang, 'empty_open_title')}</h3>
-      <p dangerouslySetInnerHTML={{ __html: t(lang, 'empty_open_desc') }} />
+      <div className={styles.dropZone} onClick={openProject}>
+        <div className={styles.dropIcon}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3 className={styles.dropTitle}>{t(lang, 'empty_open_title')}</h3>
+        <p className={styles.dropDesc} dangerouslySetInnerHTML={{ __html: t(lang, 'empty_open_desc') }} />
+      </div>
     </div>
   );
 
@@ -74,25 +105,33 @@ export const RecipeEditor: React.FC = () => {
         return [...extra].sort();
       })();
 
-  const catOptions = (config.categories || []).map((c) => Object.keys(c)[0]);
+  const catOptions = (config.categories || []).map((c) => Object.keys(c)[0]).filter(k => k !== 'all');
 
   return (
     <div className={styles.editor}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
+          {itemIcons[currentKey] && (
+            <img src={itemIcons[currentKey]} className={styles.recipeIcon} alt="" />
+          )}
           <h2 className={styles.recipeKey}>{currentKey}</h2>
           {dirtyKeys.has(currentKey) && <span className={styles.dirtyBadge}>Unsaved</span>}
         </div>
         <div className={styles.headerActions}>
-          <Button variant="success" size="sm" onClick={saveAll}>
-            <SaveIcon /> {t(lang, 'save')}
+          {dirtyKeys.has(currentKey) && (
+            <Button variant="warn" size="sm" onClick={() => discardRecipe(currentKey)}>
+              <DiscardIcon /> Discard
+            </Button>
+          )}
+          <Button variant="success" size="sm" onClick={saveAll} disabled={!dirtyKeys.has(currentKey)}>
+            {t(lang, 'save')}
           </Button>
           <Button variant="danger" size="sm" onClick={() => {
             if (confirm(t(lang, 'confirm_del_rec').replace('{k}', currentKey)))
               deleteRecipe(currentKey);
           }}>
-            <TrashIcon /> {t(lang, 'delete')}
+            {t(lang, 'delete')}
           </Button>
         </div>
       </div>
@@ -100,9 +139,11 @@ export const RecipeEditor: React.FC = () => {
       {/* Base fields */}
       <div className={styles.fieldRow}>
         <FormGroup label={t(lang, 'result_lbl')}>
-          <Select value={recipe.result} onChange={(e) => updateRecipeField(currentKey, 'result', e.target.value)}>
+          <SearchSelect value={recipe.result} onChange={(e) => {
+            renameRecipe(currentKey, e.target.value);
+          }} placeholder="Search items…">
             {itemOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-          </Select>
+          </SearchSelect>
         </FormGroup>
         <FormGroup label={t(lang, 'qty_lbl')}>
           <Input type="number" value={recipe.quantity ?? 1} min={1}
@@ -111,8 +152,10 @@ export const RecipeEditor: React.FC = () => {
         <FormGroup label={t(lang, 'cat_lbl')}>
           <Select value={recipe.category ?? 'all'}
             onChange={(e) => updateRecipeField(currentKey, 'category', e.target.value)}>
-            {catOptions.length === 0 && <option value="all">all</option>}
-            {catOptions.map((k) => <option key={k} value={k}>{k}</option>)}
+            {catOptions.length === 0
+              ? <option value="" disabled>No categories</option>
+              : catOptions.map((k) => <option key={k} value={k}>{k}</option>)
+            }
           </Select>
         </FormGroup>
       </div>
@@ -138,6 +181,7 @@ export const RecipeEditor: React.FC = () => {
         <div className={styles.sectionHead}>
           <span className={styles.sectionDot} style={{ background: 'var(--yellow)' }} />
           <span className={styles.sectionTitle}>{t(lang, 'unlock_cond')}</span>
+          <ConditionTypeSelect recipeKey={currentKey} />
         </div>
         <div className={styles.sectionBody}>
           <ConditionEditor recipeKey={currentKey} />

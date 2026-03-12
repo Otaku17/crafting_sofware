@@ -2,7 +2,9 @@ import type { CraftingConfig, GameItem } from '../types';
 
 declare global {
   interface Window {
-    showDirectoryPicker?: (opts?: { mode?: string }) => Promise<FileSystemDirectoryHandle>;
+    showDirectoryPicker?: (opts?: {
+      mode?: string;
+    }) => Promise<FileSystemDirectoryHandle>;
   }
 }
 
@@ -23,19 +25,23 @@ export interface ProjectFiles {
   config: CraftingConfig;
   configHandle: FileSystemFileHandle;
   items: GameItem[];
+  itemIcons: Record<string, string>;   // dbSymbol → object URL
   csvHandle: FileSystemFileHandle | null;
   csvTexts: Record<number, string>;
   csvLines: string[];
   warnings: string[];
 }
 
-export async function loadProjectFiles(rootDir: FileSystemDirectoryHandle): Promise<ProjectFiles> {
+export async function loadProjectFiles(
+  rootDir: FileSystemDirectoryHandle,
+): Promise<ProjectFiles> {
   const warnings: string[] = [];
   let projectName = rootDir.name;
   let projectIconUrl: string | null = null;
   let configHandle: FileSystemFileHandle | null = null;
   let config: CraftingConfig = { categories: [], data: {} };
   let items: GameItem[] = [];
+  let itemIcons: Record<string, string> = {};
   let csvHandle: FileSystemFileHandle | null = null;
   let csvTexts: Record<number, string> = {};
   let csvLines: string[] = [];
@@ -58,12 +64,23 @@ export async function loadProjectFiles(rootDir: FileSystemDirectoryHandle): Prom
   try {
     let iconFile: File | null = null;
     // Direct attempts for common extensions
-    for (const ext of ['png', 'PNG', 'jpg', 'JPG', 'jpeg', 'JPEG', 'gif', 'webp']) {
+    for (const ext of [
+      'png',
+      'PNG',
+      'jpg',
+      'JPG',
+      'jpeg',
+      'JPEG',
+      'gif',
+      'webp',
+    ]) {
       try {
         const h = await rootDir.getFileHandle(`project_icon.${ext}`);
         iconFile = await h.getFile();
         break;
-      } catch { /* try next */ }
+      } catch {
+        /* try next */
+      }
     }
     // Fallback: iterate root entries
     if (!iconFile) {
@@ -87,7 +104,9 @@ export async function loadProjectFiles(rootDir: FileSystemDirectoryHandle): Prom
     try {
       configHandle = await dir.getFileHandle('crafting_config.json');
     } catch {
-      configHandle = await dir.getFileHandle('crafting_config.json', { create: true });
+      configHandle = await dir.getFileHandle('crafting_config.json', {
+        create: true,
+      });
       await writeJsonToHandle(configHandle, config);
     }
     const raw = (await (await configHandle.getFile()).text()).trim();
@@ -108,15 +127,44 @@ export async function loadProjectFiles(rootDir: FileSystemDirectoryHandle): Prom
     for await (const [name, handle] of (dir as any).entries()) {
       if (name.endsWith('.json') && handle.kind === 'file') {
         try {
-          const d = JSON.parse(await (await (handle as FileSystemFileHandle).getFile()).text());
+          const d = JSON.parse(
+            await (await (handle as FileSystemFileHandle).getFile()).text(),
+          );
           if (d.dbSymbol) items.push(d);
-          else if (Array.isArray(d)) d.forEach((x: GameItem) => x.dbSymbol && items.push(x));
+          else if (Array.isArray(d))
+            d.forEach((x: GameItem) => x.dbSymbol && items.push(x));
         } catch {}
       }
     }
     items.sort((a, b) => a.dbSymbol.localeCompare(b.dbSymbol));
   } catch (e: any) {
     warnings.push(`items: ${e.message}`);
+  }
+
+  // item icons — graphics/icons/<icon>.png, fallback to return.png
+  try {
+    const iconsDir = await traverseDir(rootDir, 'graphics', 'icons');
+
+    // Helper: load one icon file → object URL, or null if not found
+    async function loadIcon(filename: string): Promise<string | null> {
+      try {
+        const h = await iconsDir.getFileHandle(filename);
+        return URL.createObjectURL(await h.getFile());
+      } catch {
+        return null;
+      }
+    }
+
+    // Fallback URL — loaded once
+    const fallbackUrl = await loadIcon('return.png');
+
+    for (const item of items) {
+      const iconFile = item.icon ? `${item.icon}.png` : null;
+      const url = iconFile ? await loadIcon(iconFile) : null;
+      itemIcons[item.dbSymbol] = url ?? fallbackUrl ?? '';
+    }
+  } catch {
+    // graphics/icons folder not found — icons will be empty strings
   }
 
   // CSV
@@ -135,15 +183,40 @@ export async function loadProjectFiles(rootDir: FileSystemDirectoryHandle): Prom
     } catch {}
   }
   if (!csvHandle) {
-    warnings.push('140000.csv not found in Data/Text/Dialogs/ or Data/Dialogs/');
+    warnings.push(
+      '140000.csv not found in Data/Text/Dialogs/ or Data/Dialogs/',
+    );
   }
 
   if (!configHandle) throw new Error('Could not load crafting_config.json');
 
-  return { projectName, projectIconUrl, config, configHandle, items, csvHandle, csvTexts, csvLines, warnings };
+  // Migrate recipes whose result item no longer exists in items JSON
+  // → set their category to '__undef__' so they appear uncategorized
+  const knownSymbols = new Set(items.map((i) => i.dbSymbol));
+  for (const [key, recipe] of Object.entries(config.data)) {
+    if (recipe.result && !knownSymbols.has(recipe.result)) {
+      config.data[key] = { ...recipe, category: '__undef__' };
+    }
+  }
+
+  return {
+    projectName,
+    projectIconUrl,
+    config,
+    configHandle,
+    items,
+    itemIcons,
+    csvHandle,
+    csvTexts,
+    csvLines,
+    warnings,
+  };
 }
 
-export function parseCsvText(text: string): { texts: Record<number, string>; lines: string[] } {
+export function parseCsvText(text: string): {
+  texts: Record<number, string>;
+  lines: string[];
+} {
   const lines = text.split('\n');
   const texts: Record<number, string> = {};
   lines.forEach((line, i) => {
@@ -153,13 +226,19 @@ export function parseCsvText(text: string): { texts: Record<number, string>; lin
   return { texts, lines };
 }
 
-export async function writeJsonToHandle(handle: FileSystemFileHandle, obj: unknown): Promise<void> {
+export async function writeJsonToHandle(
+  handle: FileSystemFileHandle,
+  obj: unknown,
+): Promise<void> {
   const writable = await (handle as any).createWritable();
   await writable.write(JSON.stringify(obj, null, 2));
   await writable.close();
 }
 
-export async function writeCsvToHandle(handle: FileSystemFileHandle, lines: string[]): Promise<void> {
+export async function writeCsvToHandle(
+  handle: FileSystemFileHandle,
+  lines: string[],
+): Promise<void> {
   const writable = await (handle as any).createWritable();
   await writable.write(lines.join('\n'));
   await writable.close();

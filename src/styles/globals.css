@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 /* ══════════════════════════════════════════════════════════════
    DARK MODE (default) — palette PSDK
@@ -6,12 +6,12 @@
 :root {
   color-scheme: dark;
 
-  /* ── Surfaces (du plus sombre au plus clair) */
-  --bg-base:        #141318;   /* fond principal */
-  --bg-elevated:    #1D1C22;   /* sidebar, header */
-  --bg-surface:     #26252C;   /* cards, inputs */
-  --bg-overlay:     #2E2D36;   /* hover, raised */
-  --bg-raised:      #363540;   /* active, selected */
+  /* ── Surfaces (darkest to lightest) */
+  --bg-base:        #0F0E13;   /* main background — deepest layer */
+  --bg-elevated:    #17161D;   /* sidebar, header */
+  --bg-surface:     #201F28;   /* cards, inputs */
+  --bg-overlay:     #282733;   /* hover, raised */
+  --bg-raised:      #302F3E;   /* active, selected */
 
   /* ── Borders */
   --border-subtle:  rgba(255,255,255,0.05);
@@ -51,7 +51,7 @@
   --text-disabled:  #3A3942;
 
   /* ── Typography */
-  --font-ui:   'Outfit', system-ui, -apple-system, sans-serif;
+  --font-ui:   'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* ── Radius */
@@ -71,7 +71,6 @@
   --titlebar-h:  50px;
   --toolbar-h:   46px;
   --sidebar-w:   210px;
-  --statusbar-h: 24px;
 
   /* ── Transitions */
   --t-fast: 80ms ease;
@@ -85,11 +84,11 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --bg-base:        #F2F1F6;
+  --bg-base:        #F0EFF6;
   --bg-elevated:    #FFFFFF;
-  --bg-surface:     #EEEDF4;
-  --bg-overlay:     #E5E4EE;
-  --bg-raised:      #DDDCE8;
+  --bg-surface:     #ECEAF4;
+  --bg-overlay:     #E3E1EE;
+  --bg-raised:      #DAD8EB;
 
   --border-subtle:  rgba(0,0,0,0.05);
   --border-default: rgba(0,0,0,0.09);
@@ -152,13 +151,13 @@ input[type=number]::-webkit-inner-spin-button { opacity: 0.5; }
 
 /* ── Mobile block */
 #mobile-block {
-  display: none;
+  display: flex;
   position: fixed; inset: 0; z-index: 9999;
   background: var(--bg-base);
   flex-direction: column; align-items: center; justify-content: center;
   gap: 16px; padding: 40px; text-align: center;
 }
-@media (max-width: 1024px), (pointer: coarse) { #mobile-block { display: flex; } }
+@media (min-width: 1025px) and (pointer: fine) { #mobile-block { display: none; } }
 .mb-icon {
   width: 52px; height: 52px;
   background: var(--accent-subtle); border: 1px solid var(--accent-muted);
