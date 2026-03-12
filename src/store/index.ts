@@ -115,7 +115,7 @@ export const useStore = create<AppState>((set, get) => ({
   config: { categories: [], data: {} },
   dirty: false,
   dirtyKeys: new Set(),
-  snapshots: {}, snapshotKeys: {},
+  snapshots: {},
   snapshotKeys: {},
   currentKey: null,
   lang: 'en',
