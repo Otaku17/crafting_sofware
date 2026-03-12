@@ -43,6 +43,8 @@ interface AppState {
   dirtyKeys: Set<string>;
   /** Snapshot of each recipe taken at the moment it first became dirty */
   snapshots: Record<string, Recipe>;
+  /** Original key before rename, per current dirty key */
+  snapshotKeys: Record<string, string>;
   currentKey: string | null;
 
   // UI
@@ -113,7 +115,8 @@ export const useStore = create<AppState>((set, get) => ({
   config: { categories: [], data: {} },
   dirty: false,
   dirtyKeys: new Set(),
-  snapshots: {},
+  snapshots: {}, snapshotKeys: {},
+  snapshotKeys: {},
   currentKey: null,
   lang: 'en',
   activeTab: 'recipe',
@@ -167,20 +170,39 @@ export const useStore = create<AppState>((set, get) => ({
       const snap = s.snapshots[key];
       if (!snap) return {}; // nothing to restore
 
-      const nextData = { ...s.config.data, [key]: JSON.parse(JSON.stringify(snap)) };
+      const originalKey = s.snapshotKeys[key] ?? key;
+      const nextData = { ...s.config.data };
+
+      // If the key changed (rename), remove the current key and restore under original
+      if (originalKey !== key) {
+        delete nextData[key];
+      }
+      // Rebuild preserving insertion order at the original position
+      const reordered: typeof nextData = {};
+      for (const k of Object.keys(s.config.data)) {
+        if (k === key) reordered[originalKey] = JSON.parse(JSON.stringify(snap));
+        else if (k !== originalKey) reordered[k] = nextData[k];
+      }
+      // If originalKey wasn't in the current data order, append it
+      if (!reordered[originalKey]) reordered[originalKey] = JSON.parse(JSON.stringify(snap));
+
       const nextDirtyKeys = new Set(s.dirtyKeys);
       nextDirtyKeys.delete(key);
       const nextSnaps = { ...s.snapshots };
       delete nextSnaps[key];
+      const nextSnapshotKeys = { ...s.snapshotKeys };
+      delete nextSnapshotKeys[key];
 
       return {
-        config: { ...s.config, data: nextData },
+        config: { ...s.config, data: reordered },
+        currentKey: originalKey,
         dirtyKeys: nextDirtyKeys,
         snapshots: nextSnaps,
+        snapshotKeys: nextSnapshotKeys,
         dirty: nextDirtyKeys.size > 0,
       };
     });
-    get().addToast(`"${key}" reverted`, 'info');
+    get().addToast(`"${get().currentKey}" reverted`, 'info');
   },
 
   openProject: async () => {
@@ -214,7 +236,7 @@ export const useStore = create<AppState>((set, get) => ({
         csvSnapshot: null,
         dirty: false,
         dirtyKeys: new Set(),
-        snapshots: {},
+        snapshots: {}, snapshotKeys: {},
         currentKey: null,
       });
 
@@ -243,7 +265,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (!s.configHandle) { get().addToast('No project', 'err'); return; }
     try {
       await writeJsonToHandle(s.configHandle, s.config);
-      set({ dirty: false, dirtyKeys: new Set(), snapshots: {} });
+      set({ dirty: false, dirtyKeys: new Set(), snapshots: {}, snapshotKeys: {} });
       get().addToast('crafting_config.json saved', 'ok');
     } catch (e: any) {
       get().addToast('Save error: ' + e.message, 'err');
@@ -298,8 +320,10 @@ export const useStore = create<AppState>((set, get) => ({
     newDirty.delete(key);
     const newSnaps = { ...s.snapshots };
     delete newSnaps[key];
+    const newSnapshotKeys = { ...s.snapshotKeys };
+    delete newSnapshotKeys[key];
 
-    set({ config: newConfig, dirtyKeys: newDirty, snapshots: newSnaps, currentKey: null });
+    set({ config: newConfig, dirtyKeys: newDirty, snapshots: newSnaps, snapshotKeys: newSnapshotKeys, currentKey: null });
 
     if (s.configHandle) {
       await writeJsonToHandle(s.configHandle, newConfig);
@@ -346,11 +370,18 @@ export const useStore = create<AppState>((set, get) => ({
       newDirtyKeys.add(newKey);
     }
 
+    // Track original key so discard can fully revert the rename
+    const newSnapshotKeys = { ...s.snapshotKeys };
+    // Preserve the earliest original key if already renamed before
+    newSnapshotKeys[newKey] = newSnapshotKeys[oldKey] ?? oldKey;
+    delete newSnapshotKeys[oldKey];
+
     set({
       config: { ...s.config, data: newData },
       currentKey: newKey,
       dirtyKeys: newDirtyKeys,
       snapshots: newSnaps,
+      snapshotKeys: newSnapshotKeys,
       dirty: true,
     });
   },
