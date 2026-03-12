@@ -23,7 +23,7 @@ export interface ProjectFiles {
   projectName: string;
   projectIconUrl: string | null;
   config: CraftingConfig;
-  configHandle: FileSystemFileHandle;
+  configHandle: FileSystemFileHandle | null;
   items: GameItem[];
   itemIcons: Record<string, string>;   // dbSymbol → object URL
   csvHandle: FileSystemFileHandle | null;
