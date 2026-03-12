@@ -219,8 +219,14 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       const recipeCount = Object.keys(result.config.data).length;
-      if (result.warnings.length) {
-        set({ missingFilesWarnings: result.warnings, missingFilesOpen: true });
+      const criticalWarnings = result.warnings.filter((w) => w !== 'csv_missing');
+      // Both csv_missing and plugin_missing mean the plugin is not installed
+      const hasPluginIssue = result.warnings.some((w) => w === 'csv_missing' || w === 'plugin_missing');
+      const warningsToShow = hasPluginIssue
+        ? ['plugin_missing']
+        : criticalWarnings;
+      if (warningsToShow.length) {
+        set({ missingFilesWarnings: warningsToShow, missingFilesOpen: true });
       } else {
         get().addToast(
           `"${result.projectName}" — ${result.items.length} items, ${recipeCount} recipes`,

@@ -101,24 +101,30 @@ export async function loadProjectFiles(
   // crafting_config.json
   try {
     const dir = await traverseDir(rootDir, 'Data', 'configs');
+    // Data/configs/ exists — check if crafting_config.json is present
+    let fileExists = false;
     try {
+      await dir.getFileHandle('crafting_config.json');
+      fileExists = true;
+    } catch { /* not found */ }
+
+    if (!fileExists) {
+      // Folder exists but no crafting_config.json → plugin not installed
+      warnings.push('plugin_missing');
+    } else {
       configHandle = await dir.getFileHandle('crafting_config.json');
-    } catch {
-      configHandle = await dir.getFileHandle('crafting_config.json', {
-        create: true,
-      });
-      await writeJsonToHandle(configHandle, config);
+      const raw = (await (await configHandle.getFile()).text()).trim();
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        config = {
+          categories: parsed.categories ?? [],
+          data: parsed.data ?? {},
+        };
+      }
     }
-    const raw = (await (await configHandle.getFile()).text()).trim();
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      config = {
-        categories: parsed.categories ?? [],
-        data: parsed.data ?? {},
-      };
-    }
-  } catch (e: any) {
-    warnings.push(`crafting_config: ${e.message}`);
+  } catch {
+    // Data/configs/ folder doesn't exist at all → plugin not installed
+    warnings.push('plugin_missing');
   }
 
   // items
@@ -183,12 +189,12 @@ export async function loadProjectFiles(
     } catch {}
   }
   if (!csvHandle) {
-    warnings.push(
-      '140000.csv not found in Data/Text/Dialogs/ or Data/Dialogs/',
-    );
+    warnings.push('csv_missing');
   }
 
-  if (!configHandle) throw new Error('Could not load crafting_config.json');
+  if (!configHandle && !warnings.includes('plugin_missing')) {
+    throw new Error('Could not load crafting_config.json');
+  }
 
   // Migrate recipes whose result item no longer exists in items JSON
   // → set their category to '__undef__' so they appear uncategorized

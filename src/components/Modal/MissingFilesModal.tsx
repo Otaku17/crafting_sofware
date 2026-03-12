@@ -17,22 +17,22 @@ interface MissingFilesModalProps {
 const RELEASE_URL = 'https://github.com/Otaku17/Crafting_psdk/releases';
 
 const FILE_HINTS: Record<string, MissingFile> = {
-  'crafting_config': {
+  'plugin_missing': {
     name: 'crafting_config.json',
     path: 'Data/configs/crafting_config.json',
-    description: 'Main crafting configuration file. Contains all recipes and categories.',
+    description: 'The Crafting PSDK plugin is not installed in this project. Install the plugin first — it will generate this file automatically.',
     critical: true,
+  },
+  'csv_missing': {
+    name: '140000.csv',
+    path: 'Data/Text/Dialogs/140000.csv',
+    description: 'CSV text file for category name translations. Category names will not be editable without it.',
+    critical: false,
   },
   'items': {
     name: 'items/*.json',
     path: 'Data/Studio/items/',
     description: 'Item definitions from Pokémon SDK Studio.',
-    critical: false,
-  },
-  '140000.csv': {
-    name: '140000.csv',
-    path: 'Data/Text/Dialogs/140000.csv',
-    description: 'CSV text file for category name translations.',
     critical: false,
   },
 };
@@ -55,7 +55,8 @@ export const MissingFilesModal: React.FC<MissingFilesModalProps> = ({ open, warn
   const [closing, setClosing] = useState(false);
 
   const files = parseWarnings(warnings);
-  const hasCritical = files.some((f) => f.critical);
+  const hasCritical = false; // never block — user can always close and retry
+  const isPluginMissing = warnings.includes('plugin_missing');
 
   useEffect(() => {
     if (open) {
@@ -97,9 +98,11 @@ export const MissingFilesModal: React.FC<MissingFilesModalProps> = ({ open, warn
           <div className={styles.headerText}>
             <h2 className={styles.title}>Missing project files</h2>
             <p className={styles.subtitle}>
-              {hasCritical
-                ? 'Critical files are missing. Please download the latest plugin.'
-                : 'Some optional files could not be found. Functionality may be limited.'}
+              {isPluginMissing
+                ? 'The Crafting PSDK plugin is not installed in this project.'
+                : hasCritical
+                  ? 'Critical files are missing. Please download the latest plugin.'
+                  : 'Some optional files could not be found. Functionality may be limited.'}
             </p>
           </div>
         </div>
@@ -131,7 +134,10 @@ export const MissingFilesModal: React.FC<MissingFilesModalProps> = ({ open, warn
         <div className={styles.footer}>
           {hasCritical && (
             <p className={styles.hint}>
-              Download the latest release of <strong>Crafting PSDK</strong> and place the missing files in your project.
+              {isPluginMissing
+                ? <>Install the <strong>Crafting PSDK</strong> plugin in your Pokémon Studio project, then reload.</>
+                : <>Download the latest release of <strong>Crafting PSDK</strong> and place the missing files in your project.</>
+              }
             </p>
           )}
           <div className={styles.actions}>
@@ -139,7 +145,7 @@ export const MissingFilesModal: React.FC<MissingFilesModalProps> = ({ open, warn
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.btnIcon}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
-              Download latest release
+              {isPluginMissing ? 'Get the plugin' : 'Download latest release'}
             </button>
             {!hasCritical && (
               <button className={styles.btnClose} onClick={handleClose}>
