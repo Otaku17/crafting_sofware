@@ -30,6 +30,7 @@ export const CategoryManager: React.FC = () => {
 
   const [newKey, setNewKey] = useState('');
   const [newId, setNewId] = useState('');
+  const [newName, setNewName] = useState('');
   // Which category row is selected for translation
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   // Per-lang draft values { colIdx -> draftValue }
