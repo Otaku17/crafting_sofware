@@ -18,7 +18,7 @@ const TABS = [
 ];
 
 export const App: React.FC = () => {
-  const { activeTab, setActiveTab, saveAll, configHandle, openProject, dirty, missingFilesWarnings, missingFilesOpen, closeMissingFiles } = useStore();
+  const { activeTab, setActiveTab, saveAll, configHandle, openProject, dirty, missingFilesWarnings, missingFilesOpen, closeMissingFiles, loading } = useStore();
   const [newRecipeOpen, setNewRecipeOpen] = useState(false);
 
   useEffect(() => {
@@ -62,6 +62,15 @@ export const App: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {loading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.loadingCard}>
+            <div className={styles.loadingSpinner} />
+            <span className={styles.loadingText}>Loading project…</span>
+          </div>
+        </div>
+      )}
 
       <UpdatePrompt />
       <NewRecipeModal open={newRecipeOpen} onClose={() => setNewRecipeOpen(false)} />
