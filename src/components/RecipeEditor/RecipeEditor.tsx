@@ -4,6 +4,7 @@ import { t } from '../../utils/i18n';
 import { Button } from '../layout/Button';
 import { FormGroup, Select, SearchSelect, Input } from '../layout/Form';
 import { IngredientsEditor } from './IngredientsEditor';
+import { DeleteRecipeModal } from '../Modal/DeleteRecipeModal';
 import { ConditionEditor } from './ConditionEditor';
 import { isRecipeValid } from '../../utils/validation';
 import styles from './RecipeEditor.module.css';
@@ -73,7 +74,8 @@ const CopyIcon = () => (
   </svg>
 );
 export const RecipeEditor: React.FC = () => {
-  const { lang, config, currentKey, configHandle, dirtyKeys, saveAll, deleteRecipe, discardRecipe, renameRecipe, updateRecipeField, items, addIngredient, openProject, itemIcons, itemNames, addToast } = useStore();
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const { lang, config, currentKey, configHandle, dirtyKeys, saveAll, saveRecipe, deleteRecipe, discardRecipe, renameRecipe, updateRecipeField, items, addIngredient, openProject, itemIcons, itemNames, addToast } = useStore();
 
   if (!configHandle) {
     const isMac = navigator.platform.toUpperCase().includes('MAC') || navigator.userAgent.includes('Mac');
@@ -147,12 +149,11 @@ export const RecipeEditor: React.FC = () => {
               <DiscardIcon /> Discard
             </Button>
           )}
-          <Button variant="success" size="sm" onClick={saveAll} disabled={!canSave} title={!recipeValid ? 'Fix invalid ingredients before saving' : undefined}>
+          <Button variant="success" size="sm" onClick={() => saveRecipe(currentKey)} disabled={!canSave} title={!recipeValid ? 'Fix invalid ingredients before saving' : undefined}>
             {t(lang, 'save')}
           </Button>
           <Button variant="danger" size="sm" onClick={() => {
-            if (confirm(t(lang, 'confirm_del_rec').replace('{k}', currentKey)))
-              deleteRecipe(currentKey);
+setDeleteOpen(true);
           }}>
             {t(lang, 'delete')}
           </Button>
@@ -205,6 +206,10 @@ export const RecipeEditor: React.FC = () => {
           <ConditionEditor recipeKey={currentKey} />
         </div>
       </div>
+    <DeleteRecipeModal
+        recipeKey={deleteOpen ? currentKey : null}
+        onClose={() => setDeleteOpen(false)}
+      />
     </div>
   );
 };

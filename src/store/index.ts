@@ -62,6 +62,7 @@ interface AppState {
   setTheme: (t: 'dark' | 'light') => void;
   openProject: () => Promise<void>;
   saveAll: () => Promise<void>;
+  saveRecipe: (key: string) => Promise<void>;
   addToast: (message: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
   markDirty: (key?: string | null) => void;
@@ -291,6 +292,28 @@ export const useStore = create<AppState>((set, get) => ({
       await writeJsonToHandle(s.configHandle, s.config);
       set({ dirty: false, dirtyKeys: new Set(), snapshots: {}, snapshotKeys: {} });
       get().addToast('crafting_config.json saved', 'ok');
+    } catch (e: any) {
+      get().addToast('Save error: ' + e.message, 'err');
+    }
+  },
+
+  saveRecipe: async (key) => {
+    const s = get();
+    if (!s.configHandle) { get().addToast('No project', 'err'); return; }
+    try {
+      await writeJsonToHandle(s.configHandle, s.config);
+      const nextDirtyKeys = new Set(s.dirtyKeys);
+      nextDirtyKeys.delete(key);
+      const nextSnaps = { ...s.snapshots };
+      delete nextSnaps[key];
+      const nextSnapKeys = { ...s.snapshotKeys };
+      delete nextSnapKeys[key];
+      set({
+        dirtyKeys: nextDirtyKeys,
+        dirty: nextDirtyKeys.size > 0,
+        snapshots: nextSnaps,
+        snapshotKeys: nextSnapKeys,
+      });
     } catch (e: any) {
       get().addToast('Save error: ' + e.message, 'err');
     }

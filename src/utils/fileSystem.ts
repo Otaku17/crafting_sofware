@@ -221,11 +221,15 @@ export async function loadProjectFiles(
     throw new Error('Could not load crafting_config.json');
   }
 
-  // Migrate recipes whose result item no longer exists in items JSON
+  // Migrate recipes whose result item OR any ingredient no longer exists in items JSON
   // → set their category to '__undef__' so they appear uncategorized
   const knownSymbols = new Set(items.map((i) => i.dbSymbol));
   for (const [key, recipe] of Object.entries(config.data)) {
-    if (recipe.result && !knownSymbols.has(recipe.result)) {
+    const resultMissing = recipe.result && !knownSymbols.has(recipe.result);
+    const ingredientMissing = Object.keys(recipe.ingredients ?? {}).some(
+      (ing) => !knownSymbols.has(ing)
+    );
+    if (resultMissing || ingredientMissing) {
       config.data[key] = { ...recipe, category: '__undef__' };
     }
   }
