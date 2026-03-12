@@ -11,7 +11,7 @@ const EN: Translations = {
   recipe_tab:      'Recipe',
   categories_tab:  'Categories',
   empty_open_title:'Open a project',
-  empty_open_desc: 'Click <strong>📂 Open project</strong> and select the root folder containing the <code>.studio</code> file.',
+  empty_open_desc: 'Click <strong>Open project</strong> and select the root folder containing the <code>.studio</code> file.',
   empty_sel_title: 'Select a recipe',
   empty_sel_desc:  'Choose a recipe on the left or create a new one.',
   cat_desc:        'The <strong>Text ID</strong> corresponds to a line in <code>Data/Text/Dialogs/140000.csv</code>. Adding a category auto-saves to JSON + CSV.',

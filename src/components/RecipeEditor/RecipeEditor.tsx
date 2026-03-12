@@ -5,6 +5,7 @@ import { Button } from '../layout/Button';
 import { FormGroup, Select, SearchSelect, Input } from '../layout/Form';
 import { IngredientsEditor } from './IngredientsEditor';
 import { ConditionEditor } from './ConditionEditor';
+import { isRecipeValid } from '../../utils/validation';
 import styles from './RecipeEditor.module.css';
 import type { OperatorCondition, SimpleCondition } from '../../types';
 
@@ -66,10 +67,18 @@ const DiscardIcon = () => (
   </svg>
 );
 
+const CopyIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>
+);
 export const RecipeEditor: React.FC = () => {
-  const { lang, config, currentKey, configHandle, dirtyKeys, saveAll, deleteRecipe, discardRecipe, renameRecipe, updateRecipeField, items, addIngredient, openProject, itemIcons } = useStore();
+  const { lang, config, currentKey, configHandle, dirtyKeys, saveAll, deleteRecipe, discardRecipe, renameRecipe, updateRecipeField, items, addIngredient, openProject, itemIcons, itemNames, addToast } = useStore();
 
-  if (!configHandle) return (
+  if (!configHandle) {
+    const isMac = navigator.platform.toUpperCase().includes('MAC') || navigator.userAgent.includes('Mac');
+    const shortcut = isMac ? '⌘O' : 'Ctrl+O';
+    return (
     <div className={styles.empty}>
       <div className={styles.dropZone} onClick={openProject}>
         <div className={styles.dropIcon}>
@@ -79,9 +88,10 @@ export const RecipeEditor: React.FC = () => {
         </div>
         <h3 className={styles.dropTitle}>{t(lang, 'empty_open_title')}</h3>
         <p className={styles.dropDesc} dangerouslySetInnerHTML={{ __html: t(lang, 'empty_open_desc') }} />
+        <kbd className={styles.dropShortcut}>{shortcut}</kbd>
       </div>
     </div>
-  );
+  );}
 
   if (!currentKey) return (
     <div className={styles.empty}>
@@ -107,6 +117,10 @@ export const RecipeEditor: React.FC = () => {
 
   const catOptions = (config.categories || []).map((c) => Object.keys(c)[0]).filter(k => k !== 'all');
 
+  const validItems = items.length > 0 ? items.map((i) => i.dbSymbol) : itemOptions;
+  const recipeValid = isRecipeValid(recipe, validItems);
+  const canSave = dirtyKeys.has(currentKey) && recipeValid;
+
   return (
     <div className={styles.editor}>
       {/* Header */}
@@ -115,7 +129,16 @@ export const RecipeEditor: React.FC = () => {
           {itemIcons[currentKey] && (
             <img src={itemIcons[currentKey]} className={styles.recipeIcon} alt="" />
           )}
-          <h2 className={styles.recipeKey}>{currentKey}</h2>
+          <div className={styles.recipeTitle}>
+            <h2 className={styles.recipeKey}>{itemNames[currentKey] ?? currentKey}</h2>
+            <button
+              className={styles.dbSymbolBadge}
+              onClick={() => { navigator.clipboard.writeText(currentKey); addToast(`Copied: ${currentKey}`, 'info'); }}
+              title="Click to copy db_symbol"
+            >
+              <CopyIcon />{currentKey}
+            </button>
+          </div>
           {dirtyKeys.has(currentKey) && <span className={styles.dirtyBadge}>Unsaved</span>}
         </div>
         <div className={styles.headerActions}>
@@ -124,7 +147,7 @@ export const RecipeEditor: React.FC = () => {
               <DiscardIcon /> Discard
             </Button>
           )}
-          <Button variant="success" size="sm" onClick={saveAll} disabled={!dirtyKeys.has(currentKey)}>
+          <Button variant="success" size="sm" onClick={saveAll} disabled={!canSave} title={!recipeValid ? 'Fix invalid ingredients before saving' : undefined}>
             {t(lang, 'save')}
           </Button>
           <Button variant="danger" size="sm" onClick={() => {
@@ -141,7 +164,7 @@ export const RecipeEditor: React.FC = () => {
         <FormGroup label={t(lang, 'result_lbl')}>
           <SearchSelect value={recipe.result} onChange={(e) => {
             renameRecipe(currentKey, e.target.value);
-          }} placeholder="Search items…">
+          }} placeholder="Search items…" icons={itemIcons} names={itemNames} showTriggerIcon={false}>
             {itemOptions.map((s) => <option key={s} value={s}>{s}</option>)}
           </SearchSelect>
         </FormGroup>
@@ -165,11 +188,6 @@ export const RecipeEditor: React.FC = () => {
         <div className={styles.sectionHead}>
           <span className={styles.sectionDot} style={{ background: 'var(--accent)' }} />
           <span className={styles.sectionTitle}>{t(lang, 'ingredients')}</span>
-          <div className={styles.sectionActions}>
-            <Button variant="ghost" size="sm" onClick={() => addIngredient(currentKey)}>
-              <PlusIcon /> {t(lang, 'add_ingr')}
-            </Button>
-          </div>
         </div>
         <div className={styles.sectionBody}>
           <IngredientsEditor recipeKey={currentKey} />

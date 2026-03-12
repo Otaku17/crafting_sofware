@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(9, 9, 14, 0.82);
+  background: var(--bg-base);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   opacity: 0;
@@ -28,9 +28,9 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.04) inset,
+    
     var(--shadow-lg),
-    0 0 60px rgba(248,113,113,0.07);
+    0 8px 32px var(--shadow-lg);
   width: 100%;
   max-width: 520px;
   margin: 16px;
@@ -125,7 +125,7 @@
 }
 .fileList::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 99px;
+  border-radius: var(--radius-md);
 }
 
 .fileItem {
@@ -163,7 +163,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 2px 7px;
-  border-radius: 99px;
+  border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 
@@ -188,7 +188,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-secondary);
-  background: rgba(255,255,255,0.04);
+  background: var(--bg-overlay);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
   padding: 2px 6px;

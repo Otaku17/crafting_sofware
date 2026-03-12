@@ -31,7 +31,7 @@
   color: var(--accent);
   background: var(--accent-subtle);
   border: 1px solid var(--accent-muted);
-  border-radius: 99px;
+  border-radius: var(--radius-md);
   padding: 1px 8px;
   min-width: 26px;
   text-align: center;
@@ -43,7 +43,7 @@
   color: var(--yellow);
   background: var(--yellow-subtle);
   border: 1px solid var(--yellow-muted);
-  border-radius: 99px;
+  border-radius: var(--radius-md);
   padding: 1px 7px;
   min-width: 22px;
   text-align: center;
@@ -128,7 +128,7 @@
   margin-left: auto;
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
-  border-radius: 99px;
+  border-radius: var(--radius-md);
   padding: 0px 6px;
 }
 .groupDirty {
@@ -152,7 +152,6 @@
 .item {
   display: flex;
   align-items: center;
-  gap: 7px;
   padding: 7px 8px 7px 10px;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -190,13 +189,20 @@
   color: var(--text-primary);
   transition: color var(--t-fast);
 }
+.itemIcon {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+  object-fit: contain;
+}
 
 /* ── Dirty dot on item */
 .dirtyDot {
   width: 6px; height: 6px;
   border-radius: 50%;
   background: var(--yellow);
-  box-shadow: 0 0 5px rgba(251, 191, 36, 0.6);
+  box-shadow: none;
   flex-shrink: 0;
   animation: pulse 2s ease-in-out infinite;
 }

@@ -32,6 +32,7 @@ interface AppState {
   projectIconUrl: string | null;
   items: GameItem[];
   itemIcons: Record<string, string>;
+  itemNames: Record<string, string>;
   csvTexts: Record<number, string>;
   csvLines: string[];
   csvSnapshot: string[] | null;  // lines before any pending edits
@@ -39,6 +40,7 @@ interface AppState {
   csvHandle: FileSystemFileHandle | null;
   configHandle: FileSystemFileHandle | null;
   config: CraftingConfig;
+  loading: boolean;
   dirty: boolean;
   dirtyKeys: Set<string>;
   /** Snapshot of each recipe taken at the moment it first became dirty */
@@ -56,7 +58,6 @@ interface AppState {
   missingFilesOpen: boolean;
 
   // Actions
-  setLang: (l: Lang) => void;
   setActiveTab: (t: TabId) => void;
   setTheme: (t: 'dark' | 'light') => void;
   openProject: () => Promise<void>;
@@ -64,6 +65,7 @@ interface AppState {
   addToast: (message: string, type?: ToastType) => void;
   removeToast: (id: string) => void;
   markDirty: (key?: string | null) => void;
+  checkRevert: (key: string) => void;
   snapshotIfClean: (key: string) => void;
   closeMissingFiles: () => void;
 
@@ -106,6 +108,7 @@ export const useStore = create<AppState>((set, get) => ({
   projectIconUrl: null,
   items: [],
   itemIcons: {},
+  itemNames: {},
   csvTexts: {},
   csvLines: [],
   csvSnapshot: null,
@@ -113,6 +116,7 @@ export const useStore = create<AppState>((set, get) => ({
   csvHandle: null,
   configHandle: null,
   config: { categories: [], data: {} },
+  loading: false,
   dirty: false,
   dirtyKeys: new Set(),
   snapshots: {},
@@ -125,7 +129,6 @@ export const useStore = create<AppState>((set, get) => ({
   missingFilesWarnings: [],
   missingFilesOpen: false,
 
-  setLang: (l) => set({ lang: l }),
   setActiveTab: (t) => set({ activeTab: t }),
   setTheme: (t) => {
     localStorage.setItem('theme', t);
@@ -147,6 +150,23 @@ export const useStore = create<AppState>((set, get) => ({
       if (key) nextKeys.add(key);
       return { dirty: true, dirtyKeys: nextKeys };
     });
+  },
+
+  checkRevert: (key) => {
+    const s = get();
+    const snap = s.snapshots[key];
+    const current = s.config.data[key];
+    if (snap && JSON.stringify(current) === JSON.stringify(snap)) {
+      set((st) => {
+        const nextKeys = new Set(st.dirtyKeys);
+        nextKeys.delete(key);
+        const nextSnaps = { ...st.snapshots };
+        delete nextSnaps[key];
+        return { dirtyKeys: nextKeys, dirty: nextKeys.size > 0, snapshots: nextSnaps };
+      });
+    } else {
+      get().markDirty(key);
+    }
   },
 
   setCurrentKey: (key) => set({ currentKey: key }),
@@ -219,6 +239,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     get().addToast('Loading...', 'info');
+    set({ loading: true });
     try {
       const result = await loadProjectFiles(rootDir);
       set({
@@ -229,6 +250,7 @@ export const useStore = create<AppState>((set, get) => ({
         configHandle: result.configHandle,
         items: result.items,
         itemIcons: result.itemIcons,
+        itemNames: result.itemNames,
         csvHandle: result.csvHandle,
         csvTexts: result.csvTexts,
         csvLines: result.csvLines,
@@ -238,6 +260,7 @@ export const useStore = create<AppState>((set, get) => ({
         dirtyKeys: new Set(),
         snapshots: {}, snapshotKeys: {},
         currentKey: null,
+        loading: false,
       });
 
       const recipeCount = Object.keys(result.config.data).length;
@@ -256,6 +279,7 @@ export const useStore = create<AppState>((set, get) => ({
         );
       }
     } catch (e: any) {
+      set({ loading: false });
       get().addToast('Load error: ' + e.message, 'err');
     }
   },
@@ -394,7 +418,7 @@ export const useStore = create<AppState>((set, get) => ({
         data: { ...s.config.data, [key]: { ...s.config.data[key], [field]: value } },
       },
     }));
-    get().markDirty(key);
+    get().checkRevert(key);
   },
 
   addIngredient: (recipeKey) => {
@@ -452,7 +476,7 @@ export const useStore = create<AppState>((set, get) => ({
         },
       };
     });
-    get().markDirty(recipeKey);
+    get().checkRevert(recipeKey);
   },
 
   addChildCondition: (recipeKey, path, type) => {
@@ -473,7 +497,7 @@ export const useStore = create<AppState>((set, get) => ({
         config: { ...s.config, data: { ...s.config.data, [recipeKey]: { ...recipe, unlock_condition: cond } } },
       };
     });
-    get().markDirty(recipeKey);
+    get().checkRevert(recipeKey);
   },
 
   removeChildCondition: (recipeKey, path, idx) => {
@@ -487,7 +511,7 @@ export const useStore = create<AppState>((set, get) => ({
         config: { ...s.config, data: { ...s.config.data, [recipeKey]: { ...recipe, unlock_condition: cond } } },
       };
     });
-    get().markDirty(recipeKey);
+    get().checkRevert(recipeKey);
   },
 
   // ── Categories ──

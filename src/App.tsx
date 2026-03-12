@@ -8,7 +8,6 @@ import { CategoryManager } from './components/CategoryManager/CategoryManager';
 import { JsonViewer } from './components/JsonViewer/JsonViewer';
 import { NewRecipeModal } from './components/Modal/NewRecipeModal';
 import { MissingFilesModal } from './components/Modal/MissingFilesModal';
-import { ToastContainer } from './components/Toast/Toast';
 import { UpdatePrompt } from './components/layout/UpdatePrompt';
 import styles from './App.module.css';
 
@@ -34,32 +33,32 @@ export const App: React.FC = () => {
 
   return (
     <div className={styles.app}>
-      <TitleBar />
-      <Toolbar onManageCategories={() => setActiveTab('cat')} />
+      {configHandle && <TitleBar />}
+      {configHandle && <Toolbar onManageCategories={() => setActiveTab('cat')} />}
 
       <div className={styles.body}>
-        <Sidebar onNewRecipe={() => setNewRecipeOpen(true)} />
+        {configHandle && <Sidebar onNewRecipe={() => setNewRecipeOpen(true)} />}
 
         <main className={styles.main}>
-          <div className={styles.tabs}>
-            {TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${!configHandle ? styles.tabDisabled : ''}`}
-                onClick={() => configHandle && setActiveTab(id)}
-                title={!configHandle ? 'Open a project first' : undefined}
-                disabled={!configHandle}
-              >
-                {label}
-                {id === 'recipe' && dirty && <span className={styles.tabDot} />}
-              </button>
-            ))}
-          </div>
+          {configHandle && (
+            <div className={styles.tabs}>
+              {TABS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''}`}
+                  onClick={() => setActiveTab(id)}
+                >
+                  {label}
+                  {id === 'recipe' && dirty && <span className={styles.tabDot} />}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className={styles.panels}>
             {activeTab === 'recipe' && <RecipeEditor />}
-            {activeTab === 'cat'    && <CategoryManager />}
-            {activeTab === 'json'   && <JsonViewer />}
+            {activeTab === 'cat'    && configHandle && <CategoryManager />}
+            {activeTab === 'json'   && configHandle && <JsonViewer />}
           </div>
         </main>
       </div>
@@ -67,7 +66,6 @@ export const App: React.FC = () => {
       <UpdatePrompt />
       <NewRecipeModal open={newRecipeOpen} onClose={() => setNewRecipeOpen(false)} />
       <MissingFilesModal open={missingFilesOpen} warnings={missingFilesWarnings} onClose={closeMissingFiles} />
-      <ToastContainer />
     </div>
   );
 };

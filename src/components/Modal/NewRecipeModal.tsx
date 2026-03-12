@@ -11,7 +11,7 @@ interface NewRecipeModalProps {
 }
 
 export const NewRecipeModal: React.FC<NewRecipeModalProps> = ({ open, onClose }) => {
-  const { lang, items, config, createRecipe } = useStore();
+  const { lang, items, config, createRecipe, itemIcons, itemNames } = useStore();
 
   const itemOptions = items.length > 0
     ? items.map((i) => i.dbSymbol)
@@ -58,7 +58,7 @@ export const NewRecipeModal: React.FC<NewRecipeModalProps> = ({ open, onClose })
         <p className={styles.desc}>{t(lang, 'nr_desc')}</p>
 
         <FormGroup label={t(lang, 'nr_item')} className={styles.field}>
-          <SearchSelect value={item} onChange={(e) => setItem(e.target.value)} placeholder="Search items…">
+          <SearchSelect value={item} onChange={(e) => setItem(e.target.value)} placeholder="Search items…" icons={itemIcons} names={itemNames} showTriggerIcon={true}>
             {itemOptions.map((s) => <option key={s} value={s}>{s}</option>)}
           </SearchSelect>
         </FormGroup>
@@ -66,7 +66,7 @@ export const NewRecipeModal: React.FC<NewRecipeModalProps> = ({ open, onClose })
         {/* Duplicate warning */}
         {alreadyExists && (
           <div className={styles.errorBanner}>
-            ⚠ A recipe for <strong>{item}</strong> already exists
+            ⚠ A recipe for <strong>{itemNames[item] ?? item}</strong> already exists
           </div>
         )}
 
@@ -86,7 +86,7 @@ export const NewRecipeModal: React.FC<NewRecipeModalProps> = ({ open, onClose })
         <div className={styles.preview}>
           <span className={styles.previewLabel}>{t(lang, 'key_prev')}</span>
           <span className={`${styles.previewKey} ${alreadyExists ? styles.previewKeyError : ''}`}>
-            {item || '—'}
+            {itemNames[item] ? <>{itemNames[item]} <span style={{opacity:0.5, fontSize:'11px'}}>{item}</span></> : (item || '—')}
           </span>
         </div>
 

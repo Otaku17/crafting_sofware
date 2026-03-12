@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore } from '../../store';
 import { useInstallPrompt } from '../layout/UpdatePrompt';
+import { isRecipeValid } from '../../utils/validation';
 import styles from './TitleBar.module.css';
 
 const DownloadIcon = () => (
@@ -36,9 +37,16 @@ const SaveIcon = () => (
 );
 
 export const TitleBar: React.FC = () => {
-  const { projectName, projectIconUrl, configHandle, dirty, saveAll, theme, setTheme, lang, setLang } = useStore();
+  const { projectName, projectIconUrl, configHandle, dirty, saveAll, theme, setTheme, config, dirtyKeys, items } = useStore();
   const hasFS = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
   const { canInstall, install } = useInstallPrompt();
+
+  const validItems = items.length > 0 ? items.map((i) => i.dbSymbol) : [];
+  const allDirtyValid = [...dirtyKeys].every((key) => {
+    const recipe = config.data[key];
+    return recipe ? isRecipeValid(recipe, validItems) : true;
+  });
+  const canSave = dirty && allDirtyValid;
 
   return (
     <header className={styles.titlebar}>
@@ -71,10 +79,10 @@ export const TitleBar: React.FC = () => {
       {/* Save all */}
       {configHandle && (
         <button
-          className={`${styles.saveBtn} ${dirty ? styles.saveBtnDirty : ''}`}
+          className={`${styles.saveBtn} ${canSave ? styles.saveBtnDirty : ''}`}
           onClick={saveAll}
-          disabled={!dirty}
-          title={dirty ? 'Save all changes' : 'All saved'}
+          disabled={!canSave}
+          title={!allDirtyValid ? 'Fix invalid ingredients before saving' : canSave ? 'Save all changes' : 'All saved'}
         >
           <SaveIcon />
           <span>{dirty ? 'Save all' : 'Saved'}</span>
@@ -88,14 +96,6 @@ export const TitleBar: React.FC = () => {
           <span>Install app</span>
         </button>
       )}
-
-      <div className={styles.divider} />
-
-      {/* Language segmented */}
-      <div className={styles.segmented}>
-        <button className={`${styles.segBtn} ${lang === 'en' ? styles.segActive : ''}`} onClick={() => setLang('en')}>EN</button>
-        <button className={`${styles.segBtn} ${lang === 'fr' ? styles.segActive : ''}`} onClick={() => setLang('fr')}>FR</button>
-      </div>
 
       {/* Theme toggle */}
       <button className={styles.themeBtn} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>

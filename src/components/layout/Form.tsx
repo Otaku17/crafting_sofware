@@ -174,6 +174,8 @@ interface SearchSelectProps {
   disabled?: boolean;
   placeholder?: string;
   icons?: Record<string, string>;
+  names?: Record<string, string>;   // value → display name
+  showTriggerIcon?: boolean;
   children: React.ReactNode;
 }
 
@@ -200,6 +202,8 @@ export const SearchSelect: React.FC<SearchSelectProps> = ({
   disabled,
   placeholder = 'Search…',
   icons,
+  names,
+  showTriggerIcon = true,
   children,
 }) => {
   const [open, setOpen] = useState(false);
@@ -211,7 +215,10 @@ export const SearchSelect: React.FC<SearchSelectProps> = ({
 
   const allOptions = parseOptions(children);
   const filtered = query
-    ? allOptions.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    ? allOptions.filter((o) =>
+        o.label.toLowerCase().includes(query.toLowerCase()) ||
+        (names?.[o.value] ?? '').toLowerCase().includes(query.toLowerCase())
+      )
     : allOptions;
   const current = allOptions.find((o) => o.value === String(value ?? ''));
 
@@ -288,8 +295,8 @@ export const SearchSelect: React.FC<SearchSelectProps> = ({
         onClick={() => !disabled && setOpen((v) => !v)}
         disabled={disabled}
       >
-        {icons?.[String(value ?? '')] && <img src={icons[String(value ?? '')]} className={styles.optionIcon} alt="" />}
-        <span className={styles.selectValue}>{current?.label ?? '—'}</span>
+        {showTriggerIcon && icons?.[String(value ?? '')] && <img src={icons[String(value ?? '')]} className={styles.optionIcon} alt="" />}
+        <span className={styles.selectValue}>{names?.[String(value ?? '')] ?? current?.label ?? '—'}</span>
         <svg
           className={styles.selectChevron}
           width="11" height="11" viewBox="0 0 24 24"
@@ -341,7 +348,12 @@ export const SearchSelect: React.FC<SearchSelectProps> = ({
                 onClick={() => select(opt.value)}
               >
                 {icons?.[opt.value] && <img src={icons[opt.value]} className={styles.optionIcon} alt="" />}
-                <span>{highlight(opt.label, query)}</span>
+                <span className={styles.optionLabel}>
+                  {names?.[opt.value]
+                    ? <><span className={styles.optionName}>{highlight(names[opt.value], query)}</span><span className={styles.optionSub}>{highlight(opt.label, query)}</span></>
+                    : highlight(opt.label, query)
+                  }
+                </span>
               </button>
             ))}
           </div>

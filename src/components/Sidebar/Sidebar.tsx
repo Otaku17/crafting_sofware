@@ -30,7 +30,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onNewRecipe }) => {
-  const { lang, config, configHandle, currentKey, dirtyKeys, discardRecipe, setCurrentKey, setActiveTab } = useStore();
+  const { lang, config, configHandle, currentKey, dirtyKeys, discardRecipe, setCurrentKey, setActiveTab, itemNames, itemIcons } = useStore();
   const [filter, setFilter] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -147,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNewRecipe }) => {
                         {isDirty && (
                           <span className={styles.dirtyDot} title="Unsaved changes" />
                         )}
-                        <span className={styles.itemKey}>{key}</span>
+                        {itemIcons[key] && <img src={itemIcons[key]} className={styles.itemIcon} alt="" />}<span className={styles.itemKey}>{itemNames[key] ?? key}</span>
                         {isDirty && (
                           <button
                             className={styles.discardBtn}

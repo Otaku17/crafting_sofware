@@ -3,7 +3,7 @@ import { useStore } from '../../store';
 import { t } from '../../utils/i18n';
 import type { Condition, OperatorCondition, SimpleCondition } from '../../types';
 import { Button } from '../layout/Button';
-import { Select, Input } from '../layout/Form';
+import { Select, SearchSelect, Input } from '../layout/Form';
 import styles from './ConditionEditor.module.css';
 
 const XIcon = () => (
@@ -41,7 +41,7 @@ const CondNode: React.FC<NodeProps> = ({ recipeKey, cond, path, lang }) => {
 const SimpleNode: React.FC<{ recipeKey: string; cond: SimpleCondition; path: string; lang: string }> = ({
   recipeKey, cond, path, lang,
 }) => {
-  const { updateConditionByPath, config } = useStore();
+  const { updateConditionByPath, config, itemNames, itemIcons } = useStore();
   const upd = (field: string, value: unknown) => updateConditionByPath(recipeKey, path, field, value);
   const recipeKeys = Object.keys(config.data);
 
@@ -75,10 +75,11 @@ const SimpleNode: React.FC<{ recipeKey: string; cond: SimpleCondition; path: str
           </>
         )}
         {cond.type === 'recipe' && (
-          <Select compact fullWidth={false} style={{ width: 200, maxWidth: 300 }} value={cond.key}
-            onChange={(e) => upd('key', e.target.value)}>
+          <SearchSelect compact fullWidth={false} style={{ width: 220 }} value={cond.key}
+            onChange={(e) => upd('key', e.target.value)}
+            icons={itemIcons} names={itemNames} placeholder="Search recipes…" showTriggerIcon={true}>
             {recipeKeys.map((k) => <option key={k} value={k}>{k}</option>)}
-          </Select>
+          </SearchSelect>
         )}
       </div>
     </div>

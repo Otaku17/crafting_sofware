@@ -25,7 +25,8 @@ export interface ProjectFiles {
   config: CraftingConfig;
   configHandle: FileSystemFileHandle | null;
   items: GameItem[];
-  itemIcons: Record<string, string>;   // dbSymbol → object URL
+  itemIcons: Record<string, string>;
+  itemNames: Record<string, string>;   // dbSymbol → display name from 100012.csv
   csvHandle: FileSystemFileHandle | null;
   csvTexts: Record<number, string>;
   csvLines: string[];
@@ -45,6 +46,7 @@ export async function loadProjectFiles(
   let csvHandle: FileSystemFileHandle | null = null;
   let csvTexts: Record<number, string> = {};
   let csvLines: string[] = [];
+  let itemNames: Record<string, string> = {};
 
   // .studio
   try {
@@ -173,7 +175,7 @@ export async function loadProjectFiles(
     // graphics/icons folder not found — icons will be empty strings
   }
 
-  // CSV
+  // CSV — 140000.csv (categories text)
   const csvPaths: string[][] = [
     ['Data', 'Text', 'Dialogs'],
     ['Data', 'Dialogs'],
@@ -190,6 +192,29 @@ export async function loadProjectFiles(
   }
   if (!csvHandle) {
     warnings.push('csv_missing');
+  }
+
+  // Item names — 100012.csv (id + 1 = line index, first CSV column = English)
+  for (const parts of csvPaths) {
+    try {
+      const dir = await traverseDir(rootDir, ...parts);
+      const nameHandle = await dir.getFileHandle('100012.csv');
+      const nameText = await (await nameHandle.getFile()).text();
+      const nameLines = nameText.split('\n');
+      for (const item of items) {
+        const id = typeof item.id === 'number' ? item.id : parseInt(String(item.id));
+        if (!isNaN(id)) {
+          const lineIdx = id + 1;
+          const raw = nameLines[lineIdx];
+          if (raw) {
+            // Take only first CSV column (English), ignore other language columns
+            const firstCol = raw.split(',')[0].trim().replace(/^"|"$/g, '');
+            if (firstCol) itemNames[item.dbSymbol] = firstCol;
+          }
+        }
+      }
+      break;
+    } catch {}
   }
 
   if (!configHandle && !warnings.includes('plugin_missing')) {
@@ -212,6 +237,7 @@ export async function loadProjectFiles(
     configHandle,
     items,
     itemIcons,
+    itemNames,
     csvHandle,
     csvTexts,
     csvLines,
